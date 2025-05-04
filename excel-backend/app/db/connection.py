@@ -17,3 +17,6 @@ async def get_db() -> Database:
     Used as FastAPI dependency injection.
     """
     return db
+
+# Alias for get_db to maintain compatibility with existing code
+get_database = get_db

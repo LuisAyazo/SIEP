@@ -12,6 +12,10 @@ import os
 # Import user and role routers
 from app.api.users import router as users_router
 from app.api.roles import router as roles_router
+from app.api.projects import router as projects_router
+from app.api.forms import router as forms_router
+from app.api.documents import router as documents_router
+from app.api.budget import router as budget_router
 
 app = FastAPI(title="Excel to JSON Converter",
               description="API para convertir archivos Excel a JSON manteniendo espacios y celdas combinadas")
@@ -28,6 +32,10 @@ app.add_middleware(
 # Include routers
 app.include_router(users_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
+app.include_router(projects_router, prefix="/api")
+app.include_router(forms_router, prefix="/api")
+app.include_router(documents_router, prefix="/api")
+app.include_router(budget_router, prefix="/api")
 
 # Initialize database with default admin role and user on startup
 @app.on_event("startup")
@@ -36,7 +44,7 @@ async def startup_db_client():
     from app.auth.security import get_password_hash
     from datetime import datetime
     
-    # Create default admin role if it doesn't exist
+    # Create default admin role with full permissions if it doesn't exist
     admin_role = await db.roles.find_one({"name": "admin"})
     if not admin_role:
         await db.roles.insert_one({
@@ -44,8 +52,9 @@ async def startup_db_client():
             "permissions": ["read", "write", "delete", "admin"],
             "created_at": datetime.utcnow()
         })
+        print("Created default admin role with full permissions")
     
-    # Create default user role if it doesn't exist
+    # Create default user role with basic permissions if it doesn't exist
     user_role = await db.roles.find_one({"name": "user"})
     if not user_role:
         await db.roles.insert_one({
@@ -53,19 +62,43 @@ async def startup_db_client():
             "permissions": ["read", "write"],
             "created_at": datetime.utcnow()
         })
+        print("Created default user role with basic permissions")
     
-    # Create default admin user if no users exist
-    user_count = await db.users.count_documents({})
-    if user_count == 0:
+    # Create Excel editor role with specific permissions
+    excel_editor_role = await db.roles.find_one({"name": "excel_editor"})
+    if not excel_editor_role:
+        await db.roles.insert_one({
+            "name": "excel_editor",
+            "permissions": ["read", "write", "edit_excel"],
+            "created_at": datetime.utcnow()
+        })
+        print("Created Excel editor role with specific permissions")
+    
+    # Create default admin user (admin_test@unicartagena.edu.co) with full system permissions
+    admin_user = await db.users.find_one({"email": "admin_test@unicartagena.edu.co"})
+    if not admin_user:
         await db.users.insert_one({
-            "username": "admin",
-            "email": "admin@example.com",
-            "full_name": "Administrator",
+            "username": "admin_test",
+            "email": "admin_test@unicartagena.edu.co",
+            "full_name": "Administrador del Sistema",
             "hashed_password": get_password_hash("admin123"),
             "role": "admin",
             "created_at": datetime.utcnow()
         })
-        print("Created default admin user: admin / admin123")
+        print("Created default admin user: admin_test@unicartagena.edu.co / admin123")
+    
+    # Create Luis Ayazo user with Excel editor permissions
+    luis_user = await db.users.find_one({"email": "luis.ayazo@unicartagena.edu.co"})
+    if not luis_user:
+        await db.users.insert_one({
+            "username": "luis.ayazo",
+            "email": "luis.ayazo@unicartagena.edu.co",
+            "full_name": "Luis Ayazo",
+            "hashed_password": get_password_hash("luis123"),
+            "role": "excel_editor",
+            "created_at": datetime.utcnow()
+        })
+        print("Created Excel editor user: luis.ayazo@unicartagena.edu.co / luis123")
 
 def process_excel(file_content: bytes, include_format: bool = False) -> Dict[str, Any]:
     """

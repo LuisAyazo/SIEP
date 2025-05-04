@@ -2,7 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import List
 from datetime import datetime, timedelta
-from bson.objectid import ObjectId
+# Intentar importar bson desde pymongo y proporcionar una alternativa si no está disponible
+try:
+    from pymongo.bson import ObjectId
+except ImportError:
+    try:
+        from bson.objectid import ObjectId
+    except ImportError:
+        # Si bson no está disponible, crear una clase ObjectId simplificada
+        class ObjectId:
+            def __init__(self, id_str=None):
+                self.id_str = id_str if id_str else ""
+            
+            def __str__(self):
+                return self.id_str
+            
 from jose import JWTError, jwt
 
 from app.db.connection import get_db
@@ -94,7 +108,7 @@ async def create_user(user: UserCreate, db=Depends(get_db)):
     return convert_objectid(created_user)
 
 @router.get("/users/", response_model=List[UserResponse], tags=["users"])
-async def get_users(skip: int = 0, limit: int = 10, db=Depends(get_db), 
+async def get_users(skip: int = 0, limit: int = 100, db=Depends(get_db), 
                    current_user: dict = Depends(get_current_user)):
     # Check if current user has admin role
     if current_user["role"] != "admin":
