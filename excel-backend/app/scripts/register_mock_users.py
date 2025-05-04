@@ -63,75 +63,72 @@ mock_users = [
     }
 ]
 
+# Si quieres roles y permisos más variados, puedes ajustar así:
+# admin_test: admin (todos los permisos)
+# operario: operacion (gestión de fichas y datos)
+# usuario: usuario (solo visualización)
+# soporte: operacion (gestión de fichas y datos)
+# invitado: usuario (solo visualización)
+# luis.ayazo: excel_editor (edición de excel y gestión de datos)
+
 async def create_roles_if_not_exist():
-    """Crear roles si no existen"""
     db = client.get_database()
-    
-    # Verificar y crear rol admin
-    admin_role = await db.roles.find_one({"name": "admin"})
-    if not admin_role:
-        await db.roles.insert_one({
-            "name": "admin",
-            "permissions": ["read", "write", "delete", "admin"],
-            "created_at": datetime.utcnow()
-        })
-        print("Rol 'admin' creado")
-    
-    # Verificar y crear rol operacion
-    operacion_role = await db.roles.find_one({"name": "operacion"})
-    if not operacion_role:
-        await db.roles.insert_one({
-            "name": "operacion",
-            "permissions": ["read", "write", "edit"],
-            "created_at": datetime.utcnow()
-        })
-        print("Rol 'operacion' creado")
-    
-    # Verificar y crear rol usuario
-    usuario_role = await db.roles.find_one({"name": "usuario"})
-    if not usuario_role:
-        await db.roles.insert_one({
-            "name": "usuario",
-            "permissions": ["read"],
-            "created_at": datetime.utcnow()
-        })
-        print("Rol 'usuario' creado")
-        
-    # Verificar y crear rol excel_editor
-    excel_editor_role = await db.roles.find_one({"name": "excel_editor"})
-    if not excel_editor_role:
-        await db.roles.insert_one({
-            "name": "excel_editor",
-            "permissions": ["read", "write", "edit_excel"],
-            "created_at": datetime.utcnow()
-        })
-        print("Rol 'excel_editor' creado")
+    # Elimina cualquier rol que no tenga descripción o tenga descripción vacía
+    await db.roles.delete_many({"$or": [{"description": {"$exists": False}}, {"description": ""}]})
+
+    # Fuerza la actualización/creación de los roles válidos con descripción obligatoria
+    await db.roles.update_one(
+        {"name": "admin"},
+        {
+            "$set": {
+                "description": "Acceso completo al sistema",
+                "permissions": ["read", "write", "delete", "admin"],
+            },
+            "$setOnInsert": {"created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    await db.roles.update_one(
+        {"name": "operacion"},
+        {
+            "$set": {
+                "description": "Gestión de fichas y datos",
+                "permissions": ["read", "write", "edit"],
+            },
+            "$setOnInsert": {"created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    await db.roles.update_one(
+        {"name": "usuario"},
+        {
+            "$set": {
+                "description": "Visualización y funciones básicas",
+                "permissions": ["read"],
+            },
+            "$setOnInsert": {"created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    await db.roles.update_one(
+        {"name": "excel_editor"},
+        {
+            "$set": {
+                "description": "Edición de ficheros Excel y gestión de datos",
+                "permissions": ["read", "write", "edit_excel"],
+            },
+            "$setOnInsert": {"created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
 
 async def register_mock_users():
-    """Registrar los usuarios mockeados en la base de datos"""
+    """Registrar o actualizar los usuarios mockeados en la base de datos"""
     db = client.get_database()
-    
-    # Verificar y crear roles
     await create_roles_if_not_exist()
-    
-    # Registrar cada usuario mockeado
     for user_data in mock_users:
-        # Verificar si el usuario ya existe
-        existing_user = await db.users.find_one({"username": user_data["username"]})
-        if existing_user:
-            print(f"El usuario '{user_data['username']}' ya existe en la base de datos")
-            continue
-        
-        # También verificar por correo electrónico
-        existing_email = await db.users.find_one({"email": user_data["email"]})
-        if existing_email:
-            print(f"Ya existe un usuario con el correo '{user_data['email']}' en la base de datos")
-            continue
-        
         # Hashear la contraseña
         hashed_password = get_password_hash(user_data["password"])
-        
-        # Crear el usuario en la base de datos
         new_user = {
             "username": user_data["username"],
             "email": user_data["email"],
@@ -141,9 +138,16 @@ async def register_mock_users():
             "created_at": datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00")),
             "is_active": True
         }
-        
-        result = await db.users.insert_one(new_user)
-        print(f"Usuario '{user_data['username']}' creado con ID: {result.inserted_id}")
+        # Actualiza si existe, si no, inserta
+        result = await db.users.update_one(
+            {"username": user_data["username"]},
+            {"$set": new_user},
+            upsert=True
+        )
+        if result.matched_count:
+            print(f"Usuario '{user_data['username']}' actualizado")
+        else:
+            print(f"Usuario '{user_data['username']}' creado")
 
 async def main():
     """Función principal"""

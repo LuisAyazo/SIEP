@@ -4,7 +4,8 @@ from datetime import datetime
 from bson.objectid import ObjectId
 
 from app.db.connection import get_db
-from app.db.models import Role
+# Cambiar la importación para usar los modelos correctos
+from app.models.role import RoleModel, RoleResponse
 from app.api.users import get_current_user
 
 router = APIRouter()
@@ -15,8 +16,8 @@ def convert_objectid(role):
     role.pop("_id", None)
     return role
 
-@router.post("/roles/", response_model=Role, tags=["roles"])
-async def create_role(role: Role, db=Depends(get_db), 
+@router.post("/roles/", response_model=RoleResponse, tags=["roles"])
+async def create_role(role: RoleModel, db=Depends(get_db), 
                      current_user: dict = Depends(get_current_user)):
     # Only admins can create roles
     if current_user["role"] != "admin":
@@ -34,16 +35,36 @@ async def create_role(role: Role, db=Depends(get_db),
     created_role = await db.roles.find_one({"_id": result.inserted_id})
     return convert_objectid(created_role)
 
-@router.get("/roles/", response_model=List[Role], tags=["roles"])
+@router.get("/roles/", response_model=List[RoleResponse], tags=["roles"])
 async def get_roles(skip: int = 0, limit: int = 10, db=Depends(get_db),
                    current_user: dict = Depends(get_current_user)):
     roles = []
     cursor = db.roles.find().skip(skip).limit(limit)
+    
+    print("===== ROLES DESDE LA BASE DE DATOS =====")
     async for role in cursor:
+        print(f"Role: {role.get('name', 'sin nombre')}")
+        print(f"  - ID: {role.get('_id')}")
+        print(f"  - Description: {role.get('description', 'SIN DESCRIPCIÓN')}")
+        print(f"  - Permissions: {role.get('permissions', [])}")
+        
+        # Añadir conteo de usuarios para cada rol
+        user_count = await db.users.count_documents({"role": role["name"]})
+        role["users_count"] = user_count
+        print(f"  - Users count: {user_count}")
+        
+        # Asegurar que description nunca sea None
+        if "description" not in role or role["description"] is None:
+            role["description"] = f"Rol {role['name']}"
+        
         roles.append(convert_objectid(role))
+    
+    print(f"Total roles: {len(roles)}")
+    print("========================================")
+    
     return roles
 
-@router.get("/roles/{role_id}", response_model=Role, tags=["roles"])
+@router.get("/roles/{role_id}", response_model=RoleResponse, tags=["roles"])
 async def get_role(role_id: str, db=Depends(get_db),
                   current_user: dict = Depends(get_current_user)):
     try:
@@ -57,8 +78,8 @@ async def get_role(role_id: str, db=Depends(get_db),
         
     return convert_objectid(role)
 
-@router.put("/roles/{role_id}", response_model=Role, tags=["roles"])
-async def update_role(role_id: str, role_update: Role, db=Depends(get_db),
+@router.put("/roles/{role_id}", response_model=RoleResponse, tags=["roles"])
+async def update_role(role_id: str, role_update: RoleModel, db=Depends(get_db),
                      current_user: dict = Depends(get_current_user)):
     # Only admins can update roles
     if current_user["role"] != "admin":
