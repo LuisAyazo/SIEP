@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionLevel, RESOURCES } from '@/app/auth/permissions';
@@ -20,11 +20,6 @@ export default function SettingsPage() {
     showWelcome: true,
     language: 'es'
   });
-  
-  // Debug: Log display settings changes
-  useEffect(() => {
-    console.log('🎨 displaySettings changed:', displaySettings);
-  }, [displaySettings]);
   const [systemSettings, setSystemSettings] = useState({
     autoSave: true,
     autoSaveInterval: 5,
@@ -222,7 +217,7 @@ export default function SettingsPage() {
                       type="text"
                       name="name"
                       id="name"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       defaultValue="Admin Usuario"
                     />
                   </div>
@@ -235,7 +230,7 @@ export default function SettingsPage() {
                       type="email"
                       name="email"
                       id="email"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       defaultValue="admin@example.com"
                     />
                   </div>
@@ -248,7 +243,7 @@ export default function SettingsPage() {
                       type="text"
                       name="role"
                       id="role"
-                      className="mt-1 bg-gray-50 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 bg-gray-50 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       defaultValue="Administrador"
                       disabled
                     />
@@ -258,11 +253,11 @@ export default function SettingsPage() {
                     <label htmlFor="department" className="block text-sm font-medium text-gray-700">
                       Departamento
                     </label>
-                      <select
-                        id="department"
-                        name="department"
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                      >
+                    <select
+                      id="department"
+                      name="department"
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                    >
                       <option>Tecnología</option>
                       <option>Finanzas</option>
                       <option>Operaciones</option>
@@ -287,7 +282,7 @@ export default function SettingsPage() {
                         type="password"
                         name="current-password"
                         id="current-password"
-                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       />
                     </div>
 
@@ -300,7 +295,7 @@ export default function SettingsPage() {
                           type="password"
                           name="new-password"
                           id="new-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                         />
                       </div>
 
@@ -312,7 +307,7 @@ export default function SettingsPage() {
                           type="password"
                           name="confirm-password"
                           id="confirm-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                         />
                       </div>
                     </div>
@@ -461,13 +456,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-500">Activar tema oscuro para reducir el cansancio visual.</p>
                     </div>
                     <button
-                      onClick={() => {
-                        console.log('🖱️ Dark mode toggle clicked!');
-                        console.log('   Current darkMode:', displaySettings.darkMode);
-                        const newSettings = {...displaySettings, darkMode: !displaySettings.darkMode};
-                        console.log('   New darkMode:', newSettings.darkMode);
-                        setDisplaySettings(newSettings);
-                      }}
+                      onClick={() => setDisplaySettings({...displaySettings, darkMode: !displaySettings.darkMode})}
                       type="button"
                       className={`${
                         displaySettings.darkMode ? 'bg-amber-600' : 'bg-gray-200'
@@ -489,13 +478,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-500">Mostrar más información en menos espacio.</p>
                     </div>
                     <button
-                      onClick={() => {
-                        console.log('🖱️ Compact view toggle clicked!');
-                        console.log('   Current compactView:', displaySettings.compactView);
-                        const newSettings = {...displaySettings, compactView: !displaySettings.compactView};
-                        console.log('   New compactView:', newSettings.compactView);
-                        setDisplaySettings(newSettings);
-                      }}
+                      onClick={() => setDisplaySettings({...displaySettings, compactView: !displaySettings.compactView})}
                       type="button"
                       className={`${
                         displaySettings.compactView ? 'bg-amber-600' : 'bg-gray-200'
@@ -517,13 +500,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-500">Mostrar saludo personalizado en el dashboard.</p>
                     </div>
                     <button
-                      onClick={() => {
-                        console.log('🖱️ Show welcome toggle clicked!');
-                        console.log('   Current showWelcome:', displaySettings.showWelcome);
-                        const newSettings = {...displaySettings, showWelcome: !displaySettings.showWelcome};
-                        console.log('   New showWelcome:', newSettings.showWelcome);
-                        setDisplaySettings(newSettings);
-                      }}
+                      onClick={() => setDisplaySettings({...displaySettings, showWelcome: !displaySettings.showWelcome})}
                       type="button"
                       className={`${
                         displaySettings.showWelcome ? 'bg-amber-600' : 'bg-gray-200'
@@ -543,13 +520,13 @@ export default function SettingsPage() {
                     <label htmlFor="language" className="block text-sm font-medium text-gray-700">
                       Idioma
                     </label>
-                      <select
-                        id="language"
-                        name="language"
-                        value={displaySettings.language}
-                        onChange={(e) => setDisplaySettings({...displaySettings, language: e.target.value})}
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                      >
+                    <select
+                      id="language"
+                      name="language"
+                      value={displaySettings.language}
+                      onChange={(e) => setDisplaySettings({...displaySettings, language: e.target.value})}
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                    >
                       <option value="es">Español</option>
                       <option value="en">English</option>
                       <option value="fr">Français</option>
@@ -607,7 +584,7 @@ export default function SettingsPage() {
                         name="auto-save-interval"
                         value={systemSettings.autoSaveInterval}
                         onChange={(e) => setSystemSettings({...systemSettings, autoSaveInterval: Number(e.target.value)})}
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                       >
                         <option value="1">1 minuto</option>
                         <option value="5">5 minutos</option>
@@ -627,7 +604,7 @@ export default function SettingsPage() {
                       name="session-timeout"
                       value={systemSettings.sessionTimeout}
                       onChange={(e) => setSystemSettings({...systemSettings, sessionTimeout: Number(e.target.value)})}
-                      className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     >
                       <option value="15">15 minutos</option>
                       <option value="30">30 minutos</option>
@@ -646,7 +623,7 @@ export default function SettingsPage() {
                       name="default-view"
                       value={systemSettings.defaultView}
                       onChange={(e) => setSystemSettings({...systemSettings, defaultView: e.target.value})}
-                      className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     >
                       <option value="dashboard">Dashboard</option>
                       <option value="forms">Fichas</option>
@@ -712,7 +689,7 @@ export default function SettingsPage() {
                         id="fichasPrefix"
                         value={prefixSettings.fichasPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
                         placeholder="FC-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: FC-2025-001</p>
@@ -730,7 +707,7 @@ export default function SettingsPage() {
                         id="presupuestoPrefix"
                         value={prefixSettings.presupuestoPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
                         placeholder="PS-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: PS-2025-001</p>
@@ -748,7 +725,7 @@ export default function SettingsPage() {
                         id="proyectosPrefix"
                         value={prefixSettings.proyectosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
                         placeholder="PY-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: PY-2025-001</p>
@@ -766,7 +743,7 @@ export default function SettingsPage() {
                         id="documentosPrefix"
                         value={prefixSettings.documentosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
                         placeholder="DOC-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: DOC-2025-001</p>
@@ -784,7 +761,7 @@ export default function SettingsPage() {
                         id="informesPrefix"
                         value={prefixSettings.informesPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
                         placeholder="INF-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: INF-2025-001</p>

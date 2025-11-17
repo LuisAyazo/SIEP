@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { usePermission } from "@/app/auth/hooks";
 import { hasPermission, getRolePermissions, PermissionLevel, UserRole } from "@/app/auth/permissions";
+import { hasGranularPermission, GRANULAR_PERMISSIONS, type GranularPermission } from "@/app/auth/permissions-granular";
 import CenterSelector from "@/components/CenterSelector";
 import { CenterProvider } from "@/components/providers/CenterContext";
 
@@ -17,31 +18,24 @@ interface SubItem {
   href: string;
   icon: React.ReactNode;
   adminOnly: boolean;
+  permission?: { resource: string; level: PermissionLevel };
+  granularPermission?: GranularPermission;
 }
 
-// Define separate types for items with and without subitems
-interface BaseNavItem {
+// Simplified NavItem type
+interface NavItem {
   name: string;
   href: string;
   icon: React.ReactNode;
   adminOnly: boolean;
+  permission?: { resource: string; level: PermissionLevel };
+  granularPermission?: GranularPermission;
+  subItems?: SubItem[];
 }
-
-interface NavItemWithSubItems extends BaseNavItem {
-  subItems: SubItem[];
-}
-
-interface NavItemWithoutSubItems extends BaseNavItem {
-  subItems?: never;
-}
-
-// NavItem can be either with subitems or without
-type NavItem = NavItemWithSubItems | NavItemWithoutSubItems;
 
 // Add a type guard function to check if the item has subitems
-function hasSubItems(item: NavItem): item is NavItemWithSubItems {
-  return Array.isArray((item as NavItemWithSubItems).subItems) && 
-         (item as NavItemWithSubItems).subItems.length > 0;
+function hasSubItems(item: NavItem): boolean {
+  return Array.isArray(item.subItems) && item.subItems.length > 0;
 }
 
 interface NavSection {
@@ -132,10 +126,18 @@ export default function DashboardLayout({
     }));
   };
 
-  // Función para verificar permisos usando el sistema de permisos
+  // Función para verificar permisos usando el sistema granular
+  const checkGranularPermission = (permission: GranularPermission): boolean => {
+    if (!userRole) return false;
+    // Administrador tiene todos los permisos
+    if (userRole === 'administrador') return true;
+    return hasGranularPermission(userRole, permission);
+  };
+  
+  // Función legacy para mantener compatibilidad
   const checkPermission = (resource: string, level: PermissionLevel = PermissionLevel.READ): boolean => {
     if (!userRole) return false;
-    const permissions = getRolePermissions(userRole);
+    const permissions = getRolePermissions(userRole as UserRole);
     return hasPermission(permissions, { resource, level });
   };
 
@@ -176,8 +178,8 @@ export default function DashboardLayout({
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
             </svg>
           ),
-          adminOnly: true,
-          permission: { resource: 'dashboard', level: PermissionLevel.READ }
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.DASHBOARD_VIEW
         },
         {
           name: "Usuarios",
@@ -187,8 +189,8 @@ export default function DashboardLayout({
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
           ),
-          adminOnly: true,
-          permission: { resource: 'users', level: PermissionLevel.READ }
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.USERS_READ
         },
         {
           name: "Roles",
@@ -198,8 +200,8 @@ export default function DashboardLayout({
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
             </svg>
           ),
-          adminOnly: true,
-          permission: { resource: 'roles', level: PermissionLevel.READ }
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.ROLES_READ
         },
         {
           name: "Configuración",
@@ -210,8 +212,8 @@ export default function DashboardLayout({
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             </svg>
           ),
-          adminOnly: true,
-          permission: { resource: 'settings', level: PermissionLevel.READ }
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.SETTINGS_READ
         }
       ]
     },
@@ -256,7 +258,7 @@ export default function DashboardLayout({
           subItems: [
             {
               name: "Fichas Creadas",
-              href: `/center/${centerSlug}/dashboard/fichas/forms`, // Update from /dashboard/forms to /dashboard/fichas/forms
+              href: `/center/${centerSlug}/dashboard/fichas/forms`,
               icon: (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -273,7 +275,8 @@ export default function DashboardLayout({
                   />
                 </svg>
               ),
-              adminOnly: false
+              adminOnly: false,
+              granularPermission: GRANULAR_PERMISSIONS.FICHAS_READ
             },
             {
               name: "Cargar Ficha",
@@ -294,10 +297,12 @@ export default function DashboardLayout({
                   />
                 </svg>
               ),
-              adminOnly: false
+              adminOnly: false,
+              granularPermission: GRANULAR_PERMISSIONS.FICHAS_CREATE
             }
           ],
-          adminOnly: false
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.FICHAS_READ
         },
         {
           name: "Gestión Documental",
@@ -318,7 +323,8 @@ export default function DashboardLayout({
               />
             </svg>
           ),
-          adminOnly: false
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.DOCUMENTS_READ
         },
         {
           name: "Historial de Cambios",
@@ -339,7 +345,8 @@ export default function DashboardLayout({
               />
             </svg>
           ),
-          adminOnly: false
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.HISTORY_READ
         },
         {
           name: "Historial de Fichas",
@@ -360,7 +367,53 @@ export default function DashboardLayout({
               />
             </svg>
           ),
-          adminOnly: false
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.HISTORY_READ
+        },
+        {
+          name: "Reuniones",
+          href: `/center/${centerSlug}/dashboard/meetings`,
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"
+              />
+            </svg>
+          ),
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.MEETINGS_READ
+        },
+        // Mostrar "Solicitudes" para directores y "Mis Solicitudes" para funcionarios
+        {
+          name: userRole === 'funcionario' ? "Mis Solicitudes" : "Solicitudes",
+          href: `/center/${centerSlug}/dashboard/solicitudes`,
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
+              />
+            </svg>
+          ),
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.SOLICITUDES_READ
         }
       ]
     },
@@ -423,7 +476,8 @@ export default function DashboardLayout({
           />
         </svg>
       ),
-      adminOnly: false
+      adminOnly: false,
+      granularPermission: GRANULAR_PERMISSIONS.BUDGET_READ
     },
     {
       name: "Reportes Financieros",
@@ -433,7 +487,8 @@ export default function DashboardLayout({
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25M9 16.5v.75m3-3v3M15 12v5.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>
       ),
-      adminOnly: false
+      adminOnly: false,
+      granularPermission: GRANULAR_PERMISSIONS.REPORTS_VIEW
     },
     {
       name: "Planificación Financiera",
@@ -443,7 +498,8 @@ export default function DashboardLayout({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
         </svg>
       ),
-      adminOnly: false
+      adminOnly: false,
+      granularPermission: GRANULAR_PERMISSIONS.BUDGET_READ
     }
   ]
 },
@@ -478,43 +534,38 @@ export default function DashboardLayout({
 
   // Filtrar secciones y items según permisos del usuario
   console.log('[DashboardLayout] Filtrando navegación. userRole:', userRole, 'hasAdminAccess:', hasAdminAccess());
-  const filteredNavigationSections = Object.entries(navigationSections).reduce<typeof navigationSections>((acc, [key, section]) => {
-    // Convertir key a tipo válido para navigationSections
-    const sectionKey = key as keyof typeof navigationSections;
-    
-    // Filtrar items según permisos
+  const filteredNavigationSections = Object.entries(navigationSections).reduce<Record<string, NavSection>>((acc, [key, section]) => {
+    // Filtrar items según permisos granulares
     const filteredItems = section.items.filter((item: NavItem) => {
-      console.log('[DashboardLayout] Evaluando item:', item.name, 'adminOnly:', item.adminOnly);
+      console.log('[DashboardLayout] Evaluando item:', item.name, 'adminOnly:', item.adminOnly, 'granularPermission:', item.granularPermission);
+      
       // Si es adminOnly y no tiene acceso admin, no mostrar
       if (item.adminOnly && !hasAdminAccess()) return false;
-      // Verificar permiso de lectura para el recurso (por href)
-      // Mapear href a recurso
-      let resource = null;
-      if (item.href.includes("users")) resource = "users";
-      else if (item.href.includes("roles")) resource = "roles";
-      else if (item.href.includes("budget")) resource = "budget";
-      else if (item.href.includes("forms")) resource = "forms";
-      else if (item.href.includes("documents")) resource = "documents";
-      else if (item.href.includes("history")) resource = "history";
-      else if (item.href.includes("financial-tracking")) resource = "financial_tracking";
-      else if (item.href.includes("reports")) resource = "reports";
-      else if (item.href.includes("upload-excel")) resource = "excel";
-      else if (item.href === "/dashboard") resource = "dashboard";
-      else if (item.href.includes("project")) resource = "projects";
-      // Si no se puede mapear, mostrar solo a admin
-      if (!resource) return hasAdminAccess();
-      // Verificar permiso de lectura
-      return checkPermission(userRole as UserRole, resource, PermissionLevel.READ);
+      
+      // Priorizar permisos granulares si están definidos
+      if ('granularPermission' in item && item.granularPermission) {
+        const hasAccess = checkGranularPermission(item.granularPermission);
+        console.log('[DashboardLayout] Permiso granular:', item.granularPermission, 'acceso:', hasAccess);
+        return hasAccess;
+      }
+      
+      // Fallback al sistema antiguo si no hay permiso granular
+      if ('permission' in item && item.permission) {
+        return checkPermission(item.permission.resource, item.permission.level);
+      }
+      
+      // Si no tiene permiso definido, mostrar solo a admin
+      return hasAdminAccess();
     });
 
     if (filteredItems.length > 0) {
       console.log('[DashboardLayout] Sección', key, 'tiene', filteredItems.length, 'items visibles');
-      acc[sectionKey] = { ...section, items: filteredItems };
+      acc[key] = { ...section, items: filteredItems as NavItem[] };
     } else {
       console.log('[DashboardLayout] ❌ Sección', key, 'filtrada completamente');
     }
     return acc;
-  }, {} as typeof navigationSections);
+  }, {});
   
   console.log('[DashboardLayout] Secciones finales:', Object.keys(filteredNavigationSections));
 
@@ -663,7 +714,7 @@ export default function DashboardLayout({
                                       />
                                     </svg>
                                   </div>
-                                  {isSubItemsExpanded && (
+                                  {isSubItemsExpanded && item.subItems && (
                                     <div className="pl-5 mt-1 space-y-1">
                                       {item.subItems.map((subItem, subIndex) => {
                                         if (!subItem.adminOnly || hasAdminAccess()) {

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePermission } from '@/app/auth/hooks';
 import { PermissionLevel, RESOURCES } from '@/app/auth/permissions';
 import PermissionGuard from '@/components/PermissionGuard';
+import { createClient } from '@/lib/supabase/client';
 
 // Definición de los 6 roles del sistema SIEP
 const rolesMock = [
@@ -186,15 +187,64 @@ export default function RolesPage() {
   const fetchRoles = async () => {
     setIsLoading(true);
     try {
-      // En producción, aquí iría la llamada al API
-      setRoles(rolesMock);
+      const supabase = createClient();
+      
+      // Cargar roles desde Supabase
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+
+      if (rolesError) throw rolesError;
+
+      // Transformar datos de Supabase al formato esperado
+      const transformedRoles = rolesData?.map(role => ({
+        id: role.id,
+        name: role.name,
+        displayName: role.display_name || role.name,
+        description: role.description || '',
+        color: getColorForRole(role.name),
+        icon: getIconForRole(role.name),
+        permissions: role.permissions || [],
+        userCount: 0, // Se podría calcular con una consulta adicional
+        isSystem: true,
+        created_at: role.created_at
+      })) || [];
+
+      setRoles(transformedRoles);
       setError('');
-    } catch (err) {
+    } catch (err: any) {
+      console.error('[RolesPage] Error al cargar roles:', err);
       setError('Error al cargar los roles');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Función auxiliar para obtener colores por rol
+  const getColorForRole = (roleName: string): string => {
+    const colorMap: Record<string, string> = {
+      'administrador': 'amber',
+      'director_centro': 'purple',
+      'funcionario': 'indigo',
+      'operacion': 'green',
+      'consulta': 'blue',
+      'coordinador_centro': 'teal'
+    };
+    return colorMap[roleName] || 'gray';
+  };
+
+  // Función auxiliar para obtener íconos por rol
+  const getIconForRole = (roleName: string): string => {
+    const iconMap: Record<string, string> = {
+      'administrador': '👑',
+      'director_centro': '🎯',
+      'funcionario': '📝',
+      'operacion': '⚙️',
+      'consulta': '👁️',
+      'coordinador_centro': '🤝'
+    };
+    return iconMap[roleName] || '📋';
   };
 
   const handleDeleteRole = async (roleId: string) => {
@@ -419,7 +469,7 @@ export default function RolesPage() {
                       {selectedRole === role.id ? 'Ocultar' : 'Ver'} Permisos
                     </button>
                     <Link
-                      href={`/center/${centerSlug}/dashboard/roles/edit/${role.id}`}
+                      href={`/center/${centerSlug}/dashboard/roles/edit/${role.name}`}
                       className="px-3 py-2 text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -516,7 +566,7 @@ export default function RolesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex justify-end gap-2">
                         <Link
-                          href={`/center/${centerSlug}/dashboard/roles/edit/${role.id}`}
+                          href={`/center/${centerSlug}/dashboard/roles/edit/${role.name}`}
                           className="text-amber-600 hover:text-amber-900"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

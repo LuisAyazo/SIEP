@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { AVAILABLE_CENTERS } from '../../components/providers/CenterContext';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -269,5 +269,20 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-amber-100 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 border-b-2 border-amber-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-amber-700">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

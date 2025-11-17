@@ -5,210 +5,240 @@ import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionLevel, RESOURCES } from '@/app/auth/permissions';
 import DocumentIcon from '@/components/DocumentIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
+import { useCenterContext } from '@/components/providers/CenterContext';
 
-// Mock documents data with directories
-const initialDocumentData = [
-  { 
-    id: '1', 
-    name: 'Informe Semestral 2025-I.pdf', 
-    type: 'file',
-    fileType: 'pdf',
-    createdAt: '2025-04-01', 
-    author: 'Juan Pérez', 
-    size: '2.4 MB',
-    path: '/Informes/',
-    category: 'Informes',
-    tags: ['semestral', 'académico']
-  },
-  { 
-    id: '2', 
-    name: 'Presupuesto Proyecto Extensión.xlsx', 
-    type: 'file',
-    fileType: 'xlsx',
-    createdAt: '2025-03-28', 
-    author: 'María López', 
-    size: '1.8 MB',
-    path: '/Finanzas/',
-    category: 'Finanzas',
-    tags: ['presupuesto', 'proyecto']
-  },
-  { 
-    id: '3', 
-    name: 'Convenio Universidad-Empresa.docx', 
-    type: 'file',
-    fileType: 'docx',
-    createdAt: '2025-03-15', 
-    author: 'Carlos Rodríguez', 
-    size: '3.5 MB',
-    path: '/Convenios/',
-    category: 'Legal',
-    tags: ['convenio', 'empresarial']
-  },
-  { 
-    id: '4', 
-    name: 'Formato de Inscripción.pdf', 
-    type: 'file',
-    fileType: 'pdf',
-    createdAt: '2025-03-10', 
-    author: 'Ana Martínez', 
-    size: '1.2 MB',
-    path: '/Formularios/',
-    category: 'Formularios',
-    tags: ['inscripción', 'estudiantes']
-  },
-  { 
-    id: '5', 
-    name: 'Plan de Trabajo 2025.docx', 
-    type: 'file',
-    fileType: 'docx',
-    createdAt: '2025-02-20', 
-    author: 'Luis Gómez', 
-    size: '2.1 MB',
-    path: '/Planificación/',
-    category: 'Planificación',
-    tags: ['plan', 'anual']
-  },
-  { 
-    id: 'dir1', 
-    name: 'Informes', 
-    type: 'directory',
-    createdAt: '2025-01-10', 
-    author: 'Admin Sistema', 
-    size: '--',
-    path: '/',
-    category: 'Carpeta'
-  },
-  { 
-    id: 'dir2', 
-    name: 'Finanzas', 
-    type: 'directory',
-    createdAt: '2025-01-10', 
-    author: 'Admin Sistema', 
-    size: '--',
-    path: '/',
-    category: 'Carpeta'
-  },
-  { 
-    id: 'dir3', 
-    name: 'Convenios', 
-    type: 'directory',
-    createdAt: '2025-02-05', 
-    author: 'Carlos Rodríguez', 
-    size: '--',
-    path: '/',
-    category: 'Carpeta'
-  },
-  { 
-    id: 'dir4', 
-    name: 'Formularios', 
-    type: 'directory',
-    createdAt: '2025-02-08', 
-    author: 'Ana Martínez', 
-    size: '--',
-    path: '/',
-    category: 'Carpeta'
-  },
-  { 
-    id: 'dir5', 
-    name: 'Planificación', 
-    type: 'directory',
-    createdAt: '2025-01-15', 
-    author: 'María López', 
-    size: '--',
-    path: '/',
-    category: 'Carpeta'
-  }
-];
+// Interface for Supabase document
+interface SupabaseDocument {
+  id: string;
+  title: string;
+  description?: string;
+  file_url?: string;
+  file_type?: string;
+  file_size?: number;
+  is_folder: boolean;
+  parent_id?: string;
+  category?: string;
+  tags?: string[];
+  author_name?: string;
+  created_at: string;
+  updated_at: string;
+  center_id: string;
+  uploaded_by: string;
+}
+
+// Interface for display document
+interface DocumentDisplay {
+  id: string;
+  name: string;
+  type: 'file' | 'directory';
+  fileType?: string;
+  createdAt: string;
+  author: string;
+  size: string;
+  category: string;
+  tags?: string[];
+  file_url?: string;
+}
 
 export default function DocumentsPage() {
+  const { currentCenter } = useCenterContext();
+  const session = useSupabaseSession();
+  const supabase = createClient();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [documents, setDocuments] = useState(initialDocumentData);
-  const [currentPath, setCurrentPath] = useState('/');
+  const [documents, setDocuments] = useState<DocumentDisplay[]>([]);
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+  const [pathHistory, setPathHistory] = useState<Array<{id: string | null, name: string}>>([{id: null, name: 'Inicio'}]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [modalType, setModalType] = useState<'file' | 'directory'>('file');
   const [newItemName, setNewItemName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [selectedDoc, setSelectedDoc] = useState<DocumentDisplay | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Categorías disponibles
   const categories = ['Todos', 'Informes', 'Finanzas', 'Legal', 'Formularios', 'Planificación', 'Carpeta'];
 
+  // Format file size helper
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Fetch documents from Supabase
+  useEffect(() => {
+    if (!currentCenter?.id) return;
+    
+    fetchDocuments();
+  }, [currentCenter?.id, currentParentId]);
+
+  const fetchDocuments = async () => {
+    if (!currentCenter?.id) return;
+    
+    // 🔍 DEBUG: Log current center details
+    console.log('📍 [Documents] fetchDocuments called');
+    console.log('📍 [Documents] currentCenter:', currentCenter);
+    console.log('📍 [Documents] currentCenter.id:', currentCenter.id);
+    console.log('📍 [Documents] currentCenter.id type:', typeof currentCenter.id);
+    console.log('📍 [Documents] currentCenter.name:', currentCenter.name);
+    console.log('📍 [Documents] currentCenter.slug:', currentCenter.slug);
+    
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('center_id', currentCenter.id)
+        .is('parent_id', currentParentId)
+        .order('is_folder', { ascending: false })
+        .order('title', { ascending: true });
+
+      if (fetchError) throw fetchError;
+
+      // Transform Supabase data to display format
+      const displayDocs: DocumentDisplay[] = (data || []).map(doc => ({
+        id: doc.id,
+        name: doc.title,
+        type: doc.is_folder ? 'directory' : 'file',
+        fileType: doc.file_type || '',
+        createdAt: new Date(doc.created_at).toISOString().split('T')[0],
+        author: doc.author_name || 'Usuario',
+        size: doc.is_folder ? '--' : formatFileSize(doc.file_size || 0),
+        category: doc.category || 'Otros',
+        tags: doc.tags || [],
+        file_url: doc.file_url || undefined
+      }));
+
+      setDocuments(displayDocs);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError('Error al cargar documentos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle directory creation
-  const handleCreateDirectory = () => {
-    if (!newItemName.trim()) return;
+  const handleCreateDirectory = async () => {
+    if (!newItemName.trim() || !currentCenter?.id || !session?.user?.id) return;
     
-    const newDirectory = {
-      id: `dir${Date.now()}`,
-      name: newItemName.trim(),
-      type: 'directory',
-      createdAt: new Date().toISOString().split('T')[0],
-      author: 'Usuario Actual',
-      size: '--',
-      path: currentPath,
-      category: 'Carpeta'
-    };
-    
-    setDocuments([...documents, newDirectory]);
-    setShowCreateModal(false);
-    setNewItemName('');
+    try {
+      setUploadingFile(true);
+      
+      const { error: insertError } = await supabase
+        .from('documents')
+        .insert({
+          title: newItemName.trim(),
+          is_folder: true,
+          parent_id: currentParentId,
+          center_id: currentCenter.id,
+          uploaded_by: session.user.id,
+          author_name: session.user.email || 'Usuario',
+          category: 'Carpeta'
+        });
+
+      if (insertError) throw insertError;
+
+      // Refresh documents list
+      await fetchDocuments();
+      setShowCreateModal(false);
+      setNewItemName('');
+    } catch (err) {
+      console.error('Error creating folder:', err);
+      alert('Error al crear la carpeta');
+    } finally {
+      setUploadingFile(false);
+    }
   };
 
   // Handle file upload
-  const handleFileUpload = (files?: FileList) => {
+  const handleFileUpload = async (files?: FileList) => {
     const fileList = files || fileInputRef.current?.files;
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      setUploadingFile(true);
+    if (!fileList || fileList.length === 0 || !currentCenter?.id || !session?.user?.id) return;
+    
+    const file = fileList[0];
+    setUploadingFile(true);
+    
+    try {
+      // Determine file type and category
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+      let category = 'Otros';
       
-      setTimeout(() => {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-        let fileType = '';
-        let category = 'Otros';
-        
-        switch(fileExtension) {
-          case 'pdf': 
-            fileType = 'pdf'; 
-            category = 'Informes';
-            break;
-          case 'doc':
-          case 'docx': 
-            fileType = 'docx'; 
-            category = 'Formularios';
-            break;
-          case 'xls':
-          case 'xlsx': 
-            fileType = 'xlsx'; 
-            category = 'Finanzas';
-            break;
-          default: 
-            fileType = fileExtension;
-        }
-        
-        const newFile = {
-          id: `file${Date.now()}`,
-          name: file.name,
-          type: 'file',
-          fileType: fileType,
-          createdAt: new Date().toISOString().split('T')[0],
-          author: 'Usuario Actual',
-          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          path: currentPath,
-          category: category,
-          tags: []
-        };
-        
-        setDocuments([...documents, newFile]);
-        setUploadingFile(false);
-        setShowCreateModal(false);
-        setNewItemName('');
-        setIsDragging(false);
-      }, 1500);
+      switch(fileExtension) {
+        case 'pdf': 
+          category = 'Informes';
+          break;
+        case 'doc':
+        case 'docx': 
+          category = 'Formularios';
+          break;
+        case 'xls':
+        case 'xlsx': 
+          category = 'Finanzas';
+          break;
+      }
+
+      // Upload to Supabase Storage
+      const timestamp = Date.now();
+      const fileName = `${currentCenter.id}/${timestamp}_${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+
+      // Create document record
+      const { error: insertError } = await supabase
+        .from('documents')
+        .insert({
+          title: file.name,
+          file_url: publicUrl,
+          file_type: fileExtension,
+          file_size: file.size,
+          is_folder: false,
+          parent_id: currentParentId,
+          center_id: currentCenter.id,
+          uploaded_by: session.user.id,
+          author_name: session.user.email || 'Usuario',
+          category: category
+        });
+
+      if (insertError) throw insertError;
+
+      // Refresh documents list
+      await fetchDocuments();
+      setShowCreateModal(false);
+      setNewItemName('');
+      setIsDragging(false);
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      alert('Error al subir el archivo');
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -252,7 +282,7 @@ export default function DocumentsPage() {
   };
   
   // Sort documents
-  const sortDocuments = (docs: any[]) => {
+  const sortDocuments = (docs: DocumentDisplay[]) => {
     return [...docs].sort((a, b) => {
       if (sortBy === 'name') {
         return sortOrder === 'asc' 
@@ -280,45 +310,85 @@ export default function DocumentsPage() {
   };
 
   // Navigate to directory
-  const navigateToDirectory = (dirName: string) => {
-    if (dirName === '..') {
-      const pathParts = currentPath.split('/').filter(p => p);
-      if (pathParts.length > 0) {
-        pathParts.pop();
-        const newPath = pathParts.length > 0 ? `/${pathParts.join('/')}/` : '/';
-        setCurrentPath(newPath);
-      } else {
-        setCurrentPath('/');
-      }
+  const navigateToDirectory = (folderId: string | null, folderName: string) => {
+    setCurrentParentId(folderId);
+    
+    // Update path history
+    if (folderId === null) {
+      setPathHistory([{id: null, name: 'Inicio'}]);
     } else {
-      setCurrentPath(`${currentPath}${dirName}/`);
+      const folderIndex = pathHistory.findIndex(p => p.id === folderId);
+      if (folderIndex >= 0) {
+        // Going back in history
+        setPathHistory(pathHistory.slice(0, folderIndex + 1));
+      } else {
+        // Going forward
+        setPathHistory([...pathHistory, {id: folderId, name: folderName}]);
+      }
     }
+    
     setSelectedDoc(null);
   };
 
+  // Navigate back
+  const navigateBack = () => {
+    if (pathHistory.length > 1) {
+      const newHistory = pathHistory.slice(0, -1);
+      const parent = newHistory[newHistory.length - 1];
+      setPathHistory(newHistory);
+      setCurrentParentId(parent.id);
+      setSelectedDoc(null);
+    }
+  };
+
   // Handle document click
-  const handleDocClick = (doc: any) => {
+  const handleDocClick = (doc: DocumentDisplay) => {
     if (doc.type === 'directory') {
-      navigateToDirectory(doc.name);
+      navigateToDirectory(doc.id, doc.name);
     } else {
       setSelectedDoc(doc);
     }
   };
 
   // Handle document deletion
-  const handleDelete = (id: string) => {
-    if(confirm('¿Está seguro que desea eliminar este elemento?')) {
-      setDocuments(documents.filter(doc => doc.id !== id));
+  const handleDelete = async (id: string, fileUrl?: string) => {
+    if(!confirm('¿Está seguro que desea eliminar este elemento?')) return;
+    
+    try {
+      // If it's a file, delete from storage first
+      if (fileUrl) {
+        const filePath = fileUrl.split('/documents/')[1];
+        if (filePath) {
+          const { error: storageError } = await supabase.storage
+            .from('documents')
+            .remove([filePath]);
+          
+          if (storageError) console.error('Error deleting from storage:', storageError);
+        }
+      }
+
+      // Delete from database
+      const { error: deleteError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+
+      // Refresh documents list
+      await fetchDocuments();
+      
       if (selectedDoc && selectedDoc.id === id) {
         setSelectedDoc(null);
       }
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      alert('Error al eliminar el documento');
     }
   };
 
   // Filter documents
   const filteredDocuments = documents.filter(doc => {
-    if (doc.path !== currentPath) return false;
-    
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesCategory = true;
@@ -335,42 +405,34 @@ export default function DocumentsPage() {
   const docStats = {
     total: filteredDocuments.length,
     files: filteredDocuments.filter(doc => doc.type === 'file').length,
-    folders: filteredDocuments.filter(doc => doc.type === 'directory').length,
-    totalSize: filteredDocuments
-      .filter(doc => doc.type === 'file')
-      .reduce((acc, doc) => acc + parseFloat(doc.size || '0'), 0)
-      .toFixed(2)
+    folders: filteredDocuments.filter(doc => doc.type === 'directory').length
   };
 
   // Breadcrumb
   const renderBreadcrumb = () => {
-    const paths = currentPath.split('/').filter(p => p);
-    
     return (
       <nav className="flex items-center flex-wrap gap-2 mb-6">
-        <button 
-          onClick={() => setCurrentPath('/')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors font-medium"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          Inicio
-        </button>
-        
-        {paths.map((path, index) => (
-          <React.Fragment key={path}>
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
+        {pathHistory.map((path, index) => (
+          <React.Fragment key={path.id || 'root'}>
+            {index > 0 && (
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            )}
             <button 
-              onClick={() => {
-                const targetPath = '/' + paths.slice(0, index + 1).join('/') + '/';
-                setCurrentPath(targetPath);
-              }}
-              className="px-3 py-1.5 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              onClick={() => navigateToDirectory(path.id, path.name)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                index === 0 
+                  ? 'hover:bg-blue-50 text-blue-600 hover:text-blue-700'
+                  : 'hover:bg-blue-50 text-gray-700 hover:text-blue-600'
+              }`}
             >
-              {path}
+              {index === 0 && (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              )}
+              {path.name}
             </button>
           </React.Fragment>
         ))}
@@ -496,14 +558,6 @@ export default function DocumentsPage() {
                   <p className="text-2xl font-bold text-green-700 mt-1">{docStats.folders}</p>
                 </div>
               </div>
-
-              <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                <p className="text-purple-600 text-xs font-medium">Espacio Usado</p>
-                <p className="text-xl font-bold text-purple-700 mt-1">{docStats.totalSize} MB</p>
-                <div className="mt-2 bg-purple-200 rounded-full h-2">
-                  <div className="bg-purple-600 h-2 rounded-full" style={{width: '45%'}}></div>
-                </div>
-              </div>
             </div>
 
             {/* Categories Filter */}
@@ -528,7 +582,7 @@ export default function DocumentsPage() {
                     {cat}
                     {cat !== 'Todos' && (
                       <span className="float-right text-xs bg-gray-200 px-2 py-0.5 rounded-full">
-                        {documents.filter(d => d.category === cat && d.path === currentPath).length}
+                        {documents.filter(d => d.category === cat).length}
                       </span>
                     )}
                   </button>
@@ -629,10 +683,10 @@ export default function DocumentsPage() {
             </div>
 
             {/* Back Button */}
-            {currentPath !== '/' && (
+            {pathHistory.length > 1 && (
               <div className="px-8 py-3 bg-blue-50 border-b border-blue-100">
                 <button
-                  onClick={() => navigateToDirectory('..')}
+                  onClick={navigateBack}
                   className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -645,13 +699,37 @@ export default function DocumentsPage() {
 
             {/* Documents Area */}
             <div className="flex-1 overflow-y-auto p-8">
-              {sortedDocuments.length > 0 ? (
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Cargando documentos...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-red-600 font-medium">{error}</p>
+                    <button
+                      onClick={fetchDocuments}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                </div>
+              ) : sortedDocuments.length > 0 ? (
                 <>
                   {/* Grid View */}
                   {viewMode === 'grid' && (
                     <AnimatePresence mode="wait">
                       <motion.div 
-                        key={currentPath}
+                        key={currentParentId || 'root'}
                         initial="hidden"
                         animate="visible"
                         variants={containerVariants}
@@ -691,7 +769,7 @@ export default function DocumentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDelete(doc.id);
+                                      handleDelete(doc.id, doc.file_url);
                                     }}
                                     className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
                                   >
@@ -764,7 +842,7 @@ export default function DocumentsPage() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleDelete(doc.id);
+                                        handleDelete(doc.id, doc.file_url);
                                       }}
                                       className="text-red-600 hover:text-red-700"
                                     >
@@ -855,10 +933,10 @@ export default function DocumentsPage() {
                         </button>
                         <button
                           onClick={handleCreateDirectory}
-                          disabled={!newItemName.trim()}
+                          disabled={!newItemName.trim() || uploadingFile}
                           className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Crear Carpeta
+                          {uploadingFile ? 'Creando...' : 'Crear Carpeta'}
                         </button>
                       </div>
                     </div>
@@ -968,10 +1046,6 @@ export default function DocumentsPage() {
                     <p className="text-xs font-medium text-gray-500 mb-1">Autor</p>
                     <p className="text-sm text-gray-900">{selectedDoc.author}</p>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Ubicación</p>
-                    <p className="text-sm text-gray-900">{selectedDoc.path}</p>
-                  </div>
                   {selectedDoc.tags && selectedDoc.tags.length > 0 && (
                     <div>
                       <p className="text-xs font-medium text-gray-500 mb-2">Etiquetas</p>
@@ -987,21 +1061,34 @@ export default function DocumentsPage() {
                 </div>
                 
                 <div className="space-y-3">
-                  <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver Documento
-                  </button>
-                  <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-all font-medium border border-amber-200">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Descargar
-                  </button>
+                  {selectedDoc.file_url && (
+                    <a
+                      href={selectedDoc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Ver Documento
+                    </a>
+                  )}
+                  {selectedDoc.file_url && (
+                    <a
+                      href={selectedDoc.file_url}
+                      download
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-all font-medium border border-amber-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Descargar
+                    </a>
+                  )}
                   <button 
-                    onClick={() => handleDelete(selectedDoc.id)}
+                    onClick={() => handleDelete(selectedDoc.id, selectedDoc.file_url)}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all font-medium border border-red-200"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

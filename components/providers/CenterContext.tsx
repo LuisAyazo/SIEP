@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useSupabaseSession } from './SessionProvider';
 import { useRouter, usePathname } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 // Definición del tipo de centro
 export interface Center {
@@ -28,80 +29,50 @@ export interface Center {
   };
 }
 
-// Lista predefinida de centros disponibles con datos específicos para cada uno
+// Stats por defecto cuando no hay datos
+const DEFAULT_STATS = {
+  activeProjects: 0,
+  documents: 0,
+  forms: 0,
+  activeUsers: 0,
+  totalFichas: 0,
+  pendingApprovals: 0,
+  budget: {
+    total: 0,
+    executed: 0,
+    available: 0
+  },
+  recentActivity: []
+};
+
+// Lista temporal de centros - se actualizará desde Supabase
 export const AVAILABLE_CENTERS: Center[] = [
   {
-    id: '1',
-    name: 'Centro de educación continua',
+    id: '08b72eec-a181-42e9-81d1-7c1023597dba',
+    name: 'Centro de Educación Continua',
     slug: 'centro-educacion-continua',
-    description: 'Centro especializado en educación continua',
+    description: 'Centro de formación continua y educación permanente',
     isDefault: true,
-    stats: {
-      activeProjects: 8,
-      documents: 32,
-      forms: 15,
-      activeUsers: 10,
-      totalFichas: 65,
-      pendingApprovals: 7,
-      budget: {
-        total: 150000000,
-        executed: 89000000,
-        available: 61000000
-      },
-      recentActivity: [
-        { user: 'Juan Pérez', action: 'Creación de ficha FC-1001', date: '2025-05-04T15:30:00Z' },
-        { user: 'María López', action: 'Actualización de presupuesto', date: '2025-05-03T09:15:00Z' },
-        { user: 'Carlos Gómez', action: 'Aprobación de proyecto', date: '2025-05-02T14:20:00Z' }
-      ]
-    }
+    active: true,
+    stats: DEFAULT_STATS
   },
   {
-    id: '2',
-    name: 'Centro de servicios',
+    id: 'c82f08c0-e89b-42c4-b35e-ab58267296cc',
+    name: 'Centro de Servicios',
     slug: 'centro-servicios',
-    description: 'Centro para la prestación de servicios universitarios',
-    stats: {
-      activeProjects: 12,
-      documents: 45,
-      forms: 23,
-      activeUsers: 17,
-      totalFichas: 87,
-      pendingApprovals: 5,
-      budget: {
-        total: 230000000,
-        executed: 142000000,
-        available: 88000000
-      },
-      recentActivity: [
-        { user: 'Laura Martínez', action: 'Creación de servicio SC-2001', date: '2025-05-05T10:45:00Z' },
-        { user: 'Roberto Sánchez', action: 'Asignación de presupuesto', date: '2025-05-04T16:30:00Z' },
-        { user: 'Ana García', action: 'Finalización de proyecto', date: '2025-05-01T11:20:00Z' }
-      ]
-    }
+    description: 'Centro de servicios académicos y administrativos',
+    isDefault: false,
+    active: true,
+    stats: DEFAULT_STATS
   },
   {
-    id: '3',
-    name: 'Centro de transferencia',
+    id: '01569738-a2c1-4530-bd42-bf00b8879739',
+    name: 'Centro de Transferencia',
     slug: 'centro-transferencia',
-    description: 'Centro de transferencia de conocimiento y tecnología',
-    stats: {
-      activeProjects: 6,
-      documents: 28,
-      forms: 14,
-      activeUsers: 8,
-      totalFichas: 42,
-      pendingApprovals: 3,
-      budget: {
-        total: 180000000,
-        executed: 95000000,
-        available: 85000000
-      },
-      recentActivity: [
-        { user: 'Daniela Rojas', action: 'Registro de proyecto de transferencia PT-3001', date: '2025-05-06T11:30:00Z' },
-        { user: 'Miguel Torres', action: 'Aprobación de convenio', date: '2025-05-05T14:45:00Z' },
-        { user: 'Patricia Díaz', action: 'Actualización de indicadores', date: '2025-05-03T10:15:00Z' }
-      ]
-    }
+    description: 'Centro de transferencia tecnológica',
+    isDefault: false,
+    active: true,
+    stats: DEFAULT_STATS
   }
 ];
 
@@ -136,12 +107,87 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const redirectionInProgress = useRef(false);
   const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const defaultCenterForcedRef = useRef(false);
+  const lastProcessedPathname = useRef<string | null>(null);
+  const supabase = createClient();
+
+  // 🔥 Cargar centros asignados al usuario desde Supabase
+  useEffect(() => {
+    async function loadCenters() {
+      console.log('🔄 Cargando centros desde Supabase...');
+      
+      // Si no hay sesión, usar los centros por defecto
+      if (!session?.user?.id) {
+        console.log('⚠️ No hay sesión de usuario, usando centros por defecto');
+        return;
+      }
+
+      try {
+        // Primero verificar si el usuario es administrador
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('roles!inner(name)')
+          .eq('user_id', session.user.id);
+
+        const roles = userRoles?.map((ur: any) => ur.roles?.name) || [];
+        const isAdmin = roles.includes('administrador');
+
+        let centers;
+        
+        if (isAdmin) {
+          // Si es admin, cargar todos los centros
+          console.log('👑 Usuario es administrador, cargando todos los centros');
+          const { data, error } = await supabase
+            .from('centers')
+            .select('*')
+            .order('name');
+
+          if (error) throw error;
+          centers = data;
+        } else {
+          // Si no es admin, cargar solo los centros asignados
+          console.log('👤 Usuario regular, cargando centros asignados');
+          const { data, error } = await supabase
+            .from('user_centers')
+            .select('centers(*)')
+            .eq('user_id', session.user.id);
+
+          if (error) throw error;
+          centers = data?.map((uc: any) => uc.centers).filter(Boolean) || [];
+        }
+
+        if (centers && centers.length > 0) {
+          console.log(`✅ ${centers.length} centros cargados para el usuario`);
+          
+          const formattedCenters: Center[] = centers.map((center: any, index: number) => ({
+            id: center.id,
+            name: center.name,
+            slug: center.slug,
+            description: center.description || '',
+            isDefault: index === 0,
+            active: true,
+            stats: DEFAULT_STATS
+          }));
+          
+          console.log('📋 Centros del usuario:', formattedCenters.map(c => c.name));
+          setAvailableCenters(formattedCenters);
+        } else {
+          console.warn('⚠️ Usuario no tiene centros asignados');
+          // Mantener los centros por defecto si no hay asignaciones
+        }
+      } catch (err) {
+        console.error('❌ Error cargando centros del usuario:', err);
+      }
+    }
+
+    loadCenters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]); // Solo depender del user ID, no del objeto completo
 
   // Obtener el centro por defecto de la lista de centros disponibles
   const getDefaultCenter = useCallback(() => {
-    const defaultCenter = AVAILABLE_CENTERS.find(center => center.isDefault);
-    return defaultCenter || AVAILABLE_CENTERS[0] || null;
-  }, []);
+    const defaultCenter = availableCenters.find(center => center.isDefault);
+    return defaultCenter || availableCenters[0] || null;
+  }, [availableCenters]);
 
   // Memoized function to get center from localStorage
   const getSavedCenter = useCallback(() => {
@@ -152,8 +198,8 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (savedCenter) {
         const centerData = JSON.parse(savedCenter);
         if (centerData && centerData.id && centerData.name && centerData.slug) {
-          // Ensure we have the latest stats and other data from AVAILABLE_CENTERS
-          const matchingCenter = AVAILABLE_CENTERS.find(c => c.id === centerData.id);
+          // Ensure we have the latest stats and other data from availableCenters
+          const matchingCenter = availableCenters.find(c => c.id === centerData.id);
           if (matchingCenter) {
             return { ...matchingCenter, ...centerData };
           }
@@ -291,6 +337,12 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
     
+    // 🔥 PREVENIR LOOP: No procesar el mismo pathname dos veces
+    if (lastProcessedPathname.current === pathname) {
+      console.log('[CenterContext] ⏭️ Pathname ya procesado, saltando:', pathname);
+      return;
+    }
+    
     if (pathname.includes('/center/')) {
       // Extraer el slug del centro de la URL
       const pathParts = pathname.split('/center/')[1]?.split('/') || [];
@@ -299,43 +351,79 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('[CenterContext] Detectada ruta de centro. Slug en URL:', centerSlugInUrl);
       console.log('[CenterContext] Centro actual:', currentCenter?.slug || 'ninguno');
       console.log('[CenterContext] Loading state:', loading);
+      console.log('[CenterContext] Centros disponibles:', availableCenters.map(c => c.slug));
       
-      // Si no tenemos centro o el centro actual no coincide con la URL
-      if (!currentCenter || currentCenter.slug !== centerSlugInUrl) {
-        console.log('[CenterContext] Centro en URL no coincide con centro actual, buscando...');
+      // Verificar si el usuario tiene acceso al centro en la URL
+      const matchingCenter = availableCenters.find(c => c.slug === centerSlugInUrl);
+      
+      if (!matchingCenter) {
+        // El usuario NO tiene acceso al centro en la URL
+        console.log('[CenterContext] ⛔ Usuario no tiene acceso al centro:', centerSlugInUrl);
         
-        // Buscar el centro que coincida con el slug de la URL
-        const matchingCenter = AVAILABLE_CENTERS.find(c => c.slug === centerSlugInUrl);
-        
-        if (matchingCenter) {
-          console.log('[CenterContext] ✅ Centro encontrado en URL:', matchingCenter.name);
-          setCurrentCenter(matchingCenter);
+        // Redirigir al primer centro disponible
+        const firstAvailableCenter = availableCenters[0];
+        if (firstAvailableCenter) {
+          console.log('[CenterContext] 🔀 Redirigiendo a centro disponible:', firstAvailableCenter.name);
+          setCurrentCenter(firstAvailableCenter);
           isInitialized.current = true;
-          setLoading(false); // Forzar loading a false cuando establecemos el centro
+          setLoading(false);
+          
           try {
             if (typeof window !== 'undefined') {
-              localStorage.setItem('selectedCenter', JSON.stringify(matchingCenter));
+              localStorage.setItem('selectedCenter', JSON.stringify(firstAvailableCenter));
             }
           } catch (error) {
             console.error('Error saving center to localStorage:', error);
           }
-        } else {
-          console.log('[CenterContext] ❌ No se encontró centro con slug:', centerSlugInUrl, '- usando centro por defecto');
-          // Si no se encuentra el centro, usar uno por defecto
-          const initialized = fallbackToDefaultCenter();
-          isInitialized.current = initialized;
-          setLoading(false); // Forzar loading a false
+          
+          // 🔥 MARCAR pathname como procesado ANTES de redirigir
+          lastProcessedPathname.current = pathname;
+          
+          // Redirigir a la misma ruta pero con el centro correcto
+          const newPath = pathname.replace(`/center/${centerSlugInUrl}`, `/center/${firstAvailableCenter.slug}`);
+          console.log('[CenterContext] Nueva ruta:', newPath);
+          redirectionInProgress.current = true;
+          router.push(newPath);
+          
+          setTimeout(() => {
+            redirectionInProgress.current = false;
+          }, 500);
         }
+      } else if (!currentCenter || currentCenter.slug !== centerSlugInUrl) {
+        // El usuario SÍ tiene acceso, establecer el centro
+        console.log('[CenterContext] ✅ Centro encontrado en URL:', matchingCenter.name);
+        setCurrentCenter(matchingCenter);
+        isInitialized.current = true;
+        setLoading(false);
+        
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedCenter', JSON.stringify(matchingCenter));
+          }
+        } catch (error) {
+          console.error('Error saving center to localStorage:', error);
+        }
+        
+        // 🔥 MARCAR pathname como procesado
+        lastProcessedPathname.current = pathname;
       } else {
         console.log('[CenterContext] ✅ Centro actual ya coincide con URL');
-        setLoading(false); // Asegurar que loading esté en false si ya tenemos el centro correcto
+        setLoading(false);
+        
+        // 🔥 MARCAR pathname como procesado
+        lastProcessedPathname.current = pathname;
       }
     }
-  }, [pathname, currentCenter, availableCenters, loading, fallbackToDefaultCenter]);
+  }, [pathname, currentCenter, availableCenters, loading, router]);
 
   // Actualizar la URL cuando cambia el centro o la ruta
   useEffect(() => {
     if (!currentCenter || !pathname || redirectionInProgress.current) return;
+    
+    // 🔥 PREVENIR LOOP: No procesar si ya procesamos este pathname
+    if (lastProcessedPathname.current === pathname) {
+      return;
+    }
     
     // Solo actualizar la URL si estamos en una página de centro
     if (pathname.includes('/center/')) {
@@ -354,6 +442,9 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         const newPath = `/center/${pathParts.join('/')}`;
         console.log(`URL no coincide con centro actual. Actualizando URL a: ${newPath}`);
+        
+        // 🔥 MARCAR pathname como procesado ANTES de redirigir
+        lastProcessedPathname.current = pathname;
         
         redirectionInProgress.current = true;
         router.push(newPath);
@@ -375,7 +466,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     
     // Find the center with latest data
-    const updatedCenter = AVAILABLE_CENTERS.find(c => c.id === center.id) || center;
+    const updatedCenter = availableCenters.find(c => c.id === center.id) || center;
     
     console.log(`Setting center to: ${updatedCenter.name} (ID: ${updatedCenter.id})`);
     setCurrentCenter(updatedCenter);

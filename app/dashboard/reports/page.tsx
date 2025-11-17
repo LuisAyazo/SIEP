@@ -113,7 +113,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <PermissionGuard resource={RESOURCES.REPORTS} action={ACTIONS.READ}>
+    <PermissionGuard resource={RESOURCES.REPORTS} requiredPermission={ACTIONS.READ}>
       <div className="container mx-auto bg-white rounded-lg shadow p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Reportes Financieros</h1>

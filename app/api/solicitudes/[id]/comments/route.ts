@@ -14,9 +14,10 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     // Verificar autenticación
@@ -29,7 +30,6 @@ export async function GET(
       )
     }
 
-    const { id } = params
 
     // Verificar que el usuario tenga acceso a la solicitud
     const { data: solicitud, error: solicitudError } = await supabase
@@ -117,9 +117,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     // Verificar autenticación
@@ -132,7 +133,6 @@ export async function POST(
       )
     }
 
-    const { id } = params
     const body = await request.json()
     const { comment, comment_type = 'aclaracion', attachments } = body
 

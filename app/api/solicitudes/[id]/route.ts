@@ -15,9 +15,10 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     // Verificar autenticación
@@ -30,7 +31,6 @@ export async function GET(
       )
     }
 
-    const { id } = params
 
     // Obtener solicitud con relaciones
     const { data: solicitud, error } = await supabase
@@ -122,9 +122,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     // Verificar autenticación
@@ -137,7 +138,6 @@ export async function PATCH(
       )
     }
 
-    const { id } = params
     const body = await request.json()
 
     // Campos permitidos para actualizar
@@ -208,9 +208,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     
     // Verificar autenticación
@@ -223,7 +224,6 @@ export async function DELETE(
       )
     }
 
-    const { id } = params
 
     // Obtener solicitud primero
     const { data: solicitud, error: fetchError } = await supabase

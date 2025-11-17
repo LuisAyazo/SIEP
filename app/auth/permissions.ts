@@ -57,27 +57,26 @@ const PERMISSIONS: Record<string, Record<string, PermissionLevel[]>> = {
   },
   
   // 2. Rol Director de Centro - Gestión de centro (12 permisos)
+  // El director puede crear roles, gestionar usuarios, y revisar/aprobar solicitudes
   [UserRole.DIRECTOR_CENTRO]: {
     [RESOURCES.DASHBOARD]: [PermissionLevel.READ],
-    [RESOURCES.USERS]: [PermissionLevel.READ, PermissionLevel.WRITE],
-    [RESOURCES.SOLICITUDES]: [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.ADMIN], // approve, reject, assign
+    [RESOURCES.USERS]: [PermissionLevel.READ, PermissionLevel.WRITE], // Gestionar usuarios del centro
+    [RESOURCES.ROLES]: [PermissionLevel.READ, PermissionLevel.WRITE], // Crear y asignar roles
+    [RESOURCES.SOLICITUDES]: [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.ADMIN], // Ver y aprobar/rechazar solicitudes del centro
     [RESOURCES.MEETINGS]: [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.ADMIN],
     [RESOURCES.CENTERS]: [PermissionLevel.ADMIN], // centers.manage
-    [RESOURCES.REPORTS]: [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.ADMIN], // center reports, all reports
+    [RESOURCES.REPORTS]: [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.ADMIN],
     [RESOURCES.BUDGET]: [PermissionLevel.READ],
     [RESOURCES.DOCUMENTS]: [PermissionLevel.READ],
     [RESOURCES.FICHAS]: [PermissionLevel.READ],
     [RESOURCES.HISTORY]: [PermissionLevel.READ],
+    [RESOURCES.SETTINGS]: [PermissionLevel.READ],
   },
   
-  // 3. Rol Funcionario - Usuario estándar (7 permisos)
+  // 3. Rol Funcionario - Usuario estándar con permisos limitados
+  // El funcionario SOLO puede ver Operación > Mis Solicitudes (sus propias solicitudes)
   [UserRole.FUNCIONARIO]: {
-    [RESOURCES.SOLICITUDES]: [PermissionLevel.READ, PermissionLevel.WRITE], // create, read, update, comment, upload_files
-    [RESOURCES.MEETINGS]: [PermissionLevel.READ],
-    [RESOURCES.REPORTS]: [PermissionLevel.READ], // own, view
-    [RESOURCES.DOCUMENTS]: [PermissionLevel.READ],
-    [RESOURCES.FICHAS]: [PermissionLevel.READ],
-    [RESOURCES.HISTORY]: [PermissionLevel.READ],
+    [RESOURCES.SOLICITUDES]: [PermissionLevel.READ, PermissionLevel.WRITE], // Solo puede crear y ver sus propias solicitudes
   },
   
   // 4. Rol Operación - Operación con permisos limitados (5 permisos)
