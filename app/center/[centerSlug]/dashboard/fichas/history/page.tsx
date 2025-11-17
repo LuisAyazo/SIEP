@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import PermissionGuard from '../../../components/PermissionGuard';
-import { RESOURCES, ACTIONS } from '../../auth/permissions';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionLevel } from '@/app/auth/permissions';
 
 // Mock history data for the changes
 const historyData = [
@@ -203,7 +203,7 @@ export default function HistoryPage() {
   };
 
   return (
-    <PermissionGuard resource={RESOURCES.HISTORY} action={ACTIONS.READ}>
+    <PermissionGuard resource="history" requiredPermission={PermissionLevel.READ}>
       <div className="container mx-auto bg-white rounded-lg shadow p-6">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Historial de Cambios</h1>

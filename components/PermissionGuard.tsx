@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSupabaseSession } from './providers/SessionProvider';
 import { usePermission } from '@/app/auth/hooks';
 import { PermissionLevel } from '@/app/auth/permissions';
 
@@ -19,12 +19,12 @@ export default function PermissionGuard({
   redirectTo = '/',
   children,
 }: PermissionGuardProps) {
-  const { data: session, status } = useSession();
+  const { user, loading } = useSupabaseSession();
   const router = useRouter();
   const hasAccess = usePermission(resource, requiredPermission);
 
   // Check if the user is authenticated
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-100px)]">
         <div className="h-12 w-12 border-b-2 border-amber-600 rounded-full animate-spin"></div>
@@ -35,7 +35,7 @@ export default function PermissionGuard({
   // If the user doesn't have the required permission, redirect them
   if (!hasAccess) {
     // Use a client-side redirect for authenticated users without permission
-    if (status === 'authenticated') {
+    if (user) {
       // If in production, perform the redirect
       // In development, just show a warning so we can develop the UI
       if (process.env.NODE_ENV === 'production') {

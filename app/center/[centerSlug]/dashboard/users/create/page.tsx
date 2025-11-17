@@ -1,69 +1,100 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { usePermission } from '@/app/auth/hooks';
 import { PermissionLevel, RESOURCES } from '@/app/auth/permissions';
 import PermissionGuard from '@/components/PermissionGuard';
+import { createClient } from '@/lib/supabase/client';
 
-// Define role options with their descriptions and permissions - aligned with the roles page
-const roleOptions = [
-  {
-    value: 'admin',
-    label: 'Administrador',
-    description: 'Acceso completo a todas las funciones del sistema',
-    permissions: [
-      'users.create', 'users.read', 'users.update', 'users.delete',
-      'roles.create', 'roles.read', 'roles.update', 'roles.delete',
-      'forms.create', 'forms.read', 'forms.update', 'forms.delete'
-    ]
-  },
-  {
-    value: 'operacion',
-    label: 'Operación',
-    description: 'Acceso a funciones de operación, sin administración de usuarios',
-    permissions: [
-      'forms.create', 'forms.read', 'forms.update', 'forms.delete', 
-      'users.read'
-    ]
-  },
-  {
-    value: 'consulta',
-    label: 'Consulta',
-    description: 'Acceso básico solo para consulta de información',
-    permissions: ['forms.read']
-  },
-  {
-    value: 'superadmin',
-    label: 'Super Administrador',
-    description: 'Acceso ilimitado con capacidad de modificar parámetros críticos del sistema',
-    permissions: ['*'] // All permissions
-  }
-];
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Center {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function CreateUserPage() {
+  const params = useParams();
+  const centerSlug = params.centerSlug as string;
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
     full_name: '',
-    role: 'consulta'
+    role: ''
   });
   
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRoleInfo, setSelectedRoleInfo] = useState(roleOptions.find(r => r.value === 'consulta'));
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [centers, setCenters] = useState<Center[]>([]);
+  const [selectedCenters, setSelectedCenters] = useState<string[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   
   const router = useRouter();
   
+  // Cargar roles y centros desde Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const supabase = createClient();
+        
+        // Cargar roles
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('roles')
+          .select('*')
+          .order('name');
+        
+        if (rolesError) throw rolesError;
+        
+        setRoles(rolesData || []);
+        
+        // Seleccionar 'funcionario' por defecto
+        const defaultRole = rolesData?.find(r => r.name === 'funcionario') || rolesData?.[0];
+        if (defaultRole) {
+          setFormData(prev => ({ ...prev, role: defaultRole.id }));
+          setSelectedRole(defaultRole);
+        }
+        
+        // Cargar centros
+        const { data: centersData, error: centersError } = await supabase
+          .from('centers')
+          .select('id, name, slug')
+          .order('name');
+        
+        if (centersError) throw centersError;
+        
+        setCenters(centersData || []);
+        
+        // Seleccionar centro de servicios por defecto
+        const defaultCenter = centersData?.find(c => c.slug === 'centro-servicios');
+        if (defaultCenter) {
+          setSelectedCenters([defaultCenter.id]);
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+      } finally {
+        setIsLoadingRoles(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
   // Update selected role info when role changes
   useEffect(() => {
-    const roleInfo = roleOptions.find(r => r.value === formData.role);
-    setSelectedRoleInfo(roleInfo);
-  }, [formData.role]);
+    const roleInfo = roles.find(r => r.id === formData.role);
+    setSelectedRole(roleInfo || null);
+  }, [formData.role, roles]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -84,16 +115,12 @@ export default function CreateUserPage() {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    if (!formData.username.trim()) {
-      newErrors.username = 'El nombre de usuario es requerido';
-    } else if (formData.username.length < 4) {
-      newErrors.username = 'El nombre de usuario debe tener al menos 4 caracteres';
-    }
-    
     if (!formData.email.trim()) {
       newErrors.email = 'El correo electrónico es requerido';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'El formato del correo electrónico es inválido';
+    } else if (!formData.email.endsWith('@unicartagena.edu.co')) {
+      newErrors.email = 'El correo debe ser del dominio @unicartagena.edu.co';
     }
     
     if (!formData.password) {
@@ -123,17 +150,55 @@ export default function CreateUserPage() {
     
     setIsSubmitting(true);
     
-    // Simulación de envío al servidor
     try {
-      // En una implementación real, aquí se enviaría la solicitud al API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const supabase = createClient();
+      
+      // Crear usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.full_name
+          }
+        }
+      });
+      
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('No se pudo crear el usuario');
+      
+      const newUserId = authData.user.id;
+      
+      // Asignar rol al usuario
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newUserId,
+          role_id: formData.role
+        });
+      
+      if (roleError) throw roleError;
+      
+      // Asignar centros al usuario
+      if (selectedCenters.length > 0) {
+        const centerAssignments = selectedCenters.map(centerId => ({
+          user_id: newUserId,
+          center_id: centerId
+        }));
+        
+        const { error: centersError } = await supabase
+          .from('user_centers')
+          .insert(centerAssignments);
+        
+        if (centersError) throw centersError;
+      }
       
       // Redireccionar a la lista de usuarios tras éxito
-      router.push('/dashboard/users');
-    } catch (error) {
+      router.push(`/center/${centerSlug}/dashboard/users`);
+    } catch (error: any) {
       console.error('Error creating user:', error);
       setErrors({
-        form: 'Ocurrió un error al crear el usuario. Por favor intente nuevamente.'
+        form: error.message || 'Ocurrió un error al crear el usuario. Por favor intente nuevamente.'
       });
     } finally {
       setIsSubmitting(false);
@@ -211,7 +276,7 @@ export default function CreateUserPage() {
                     type="text"
                     name="full_name"
                     id="full_name"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12 ${errors.full_name ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.full_name ? 'border-red-300' : ''}`}
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder="Ingrese el nombre completo"
@@ -229,36 +294,6 @@ export default function CreateUserPage() {
               </div>
               
               <div className="col-span-1">
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de Usuario
-                </label>
-                <motion.div 
-                  whileFocus="focus" 
-                  animate={errors.username ? "error" : ""}
-                  variants={inputVariants}
-                >
-                  <input
-                    type="text"
-                    name="username"
-                    id="username"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12 ${errors.username ? 'border-red-300' : ''}`}
-                    value={formData.username}
-                    onChange={handleChange}
-                    placeholder="Nombre de usuario para acceso"
-                  />
-                </motion.div>
-                {errors.username && (
-                  <motion.p 
-                    className="mt-1 text-sm text-red-600"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    {errors.username}
-                  </motion.p>
-                )}
-              </div>
-              
-              <div className="col-span-2">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Correo Electrónico
                 </label>
@@ -271,10 +306,10 @@ export default function CreateUserPage() {
                     type="email"
                     name="email"
                     id="email"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12 ${errors.email ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.email ? 'border-red-300' : ''}`}
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="ejemplo@dominio.com"
+                    placeholder="ejemplo@unicartagena.edu.co"
                   />
                 </motion.div>
                 {errors.email && (
@@ -302,7 +337,7 @@ export default function CreateUserPage() {
                       type={showPassword ? "text" : "password"}
                       name="password"
                       id="password"
-                      className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-md h-12 ${errors.password ? 'border-red-300' : ''}`}
+                      className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 pr-10 sm:text-sm border-gray-300 rounded-md h-12 ${errors.password ? 'border-red-300' : ''}`}
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="Mínimo 6 caracteres"
@@ -352,7 +387,7 @@ export default function CreateUserPage() {
                     type={showPassword ? "text" : "password"}
                     name="confirmPassword"
                     id="confirmPassword"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12 ${errors.confirmPassword ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.confirmPassword ? 'border-red-300' : ''}`}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Repita la contraseña"
@@ -373,42 +408,74 @@ export default function CreateUserPage() {
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                   Rol de Usuario
                 </label>
-                <select
-                  id="role"
-                  name="role"
-                  className="block w-full pl-3 pr-10 py-3 h-12 text-base border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md"
-                  value={formData.role}
-                  onChange={handleChange}
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role.value} value={role.value}>{role.label}</option>
-                  ))}
-                </select>
+                {isLoadingRoles ? (
+                  <div className="h-12 bg-gray-100 animate-pulse rounded-md"></div>
+                ) : (
+                  <select
+                    id="role"
+                    name="role"
+                    className="block w-full px-4 pr-10 py-3 h-12 text-base border border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md shadow-sm"
+                    value={formData.role}
+                    onChange={handleChange}
+                    disabled={roles.length === 0}
+                  >
+                    <option value="">Seleccione un rol</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
+                )}
                 
-                {selectedRoleInfo && (
+                {selectedRole && (
                   <motion.div
-                    className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200"
+                    className="mt-3 p-4 bg-gradient-to-r from-amber-50 to-white rounded-md border border-amber-200"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     transition={{ duration: 0.3 }}
                   >
-                    <p className="text-sm font-medium text-gray-700">{selectedRoleInfo.label}</p>
-                    <p className="text-xs text-gray-500 mt-1">{selectedRoleInfo.description}</p>
-                    <div className="mt-2">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Permisos:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedRoleInfo.permissions.map((permission, index) => (
-                          <span 
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800"
-                          >
-                            {permission}
-                          </span>
-                        ))}
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-amber-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-800 capitalize">{selectedRole.name.replace('_', ' ')}</p>
+                        <p className="text-xs text-gray-600 mt-1">{selectedRole.description}</p>
                       </div>
                     </div>
                   </motion.div>
                 )}
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Centros Asignados
+                </label>
+                <div className="bg-gray-50 rounded-md border border-gray-200 p-4">
+                  <div className="space-y-3">
+                    {centers.map(center => (
+                      <label key={center.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedCenters.includes(center.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCenters([...selectedCenters, center.id]);
+                            } else {
+                              setSelectedCenters(selectedCenters.filter(id => id !== center.id));
+                            }
+                          }}
+                          className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{center.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedCenters.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-2">⚠️ Debes seleccionar al menos un centro</p>
+                  )}
+                </div>
               </div>
             </div>
             

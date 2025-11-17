@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import { hasPermission, PermissionLevel, Permission, UserRole } from './permissions';
 
 /**
@@ -10,30 +10,32 @@ import { hasPermission, PermissionLevel, Permission, UserRole } from './permissi
  * @returns Boolean indicating if the user has the permission
  */
 export function usePermission(resource: string, level: PermissionLevel): boolean {
-  const { data: session } = useSession();
+  const { user } = useSupabaseSession();
   
-  if (!session?.user) {
+  if (!user) {
     return false;
   }
 
-  // that doesn't exist on the user object
-  const userRole = session.user.role as string;
+  const userRole = (user as any).role as string || 'funcionario';
   
   // Map string role to UserRole enum if possible
-  let role: UserRole;
-  if (Object.values(UserRole).includes(userRole as UserRole)) {
-    role = userRole as UserRole;
-  } else if (userRole === "usuario") {
-    role = UserRole.VIEWER;
-  } else {
-    // Default to VIEWER if role is invalid
-    role = UserRole.VIEWER;
-    console.warn(`Unknown user role "${userRole}", defaulting to VIEWER for permission checks`);
-  }
+  let role: string = userRole;
+  
+  // Mapear roles legacy
+  const roleMap: Record<string, string> = {
+    'usuario': 'funcionario',
+    'superadmin': 'administrador',
+    'admin': 'director_centro',
+    'manager': 'director_centro',
+    'editor': 'funcionario',
+    'viewer': 'funcionario'
+  };
+  
+  role = roleMap[userRole] || userRole;
 
-  // Use the user-role based permission check with properly typed user object
+  // Use the user-role based permission check
   return hasPermission(
-    { role }, 
+    { role: role as any },
     resource,
     level
   );
@@ -44,60 +46,30 @@ export function usePermission(resource: string, level: PermissionLevel): boolean
  * @returns Array of derived permissions for the current user
  */
 export function usePermissions(): Permission[] {
-  const { data: session } = useSession();
-  const userRoleStr = session?.user?.role as string;
+  const { user } = useSupabaseSession();
   
-  if (!userRoleStr) {
+  if (!user) {
     return [];
   }
   
-  // Convert string role to enum
-  let userRole: UserRole;
-  if (Object.values(UserRole).includes(userRoleStr as UserRole)) {
-    userRole = userRoleStr as UserRole;
-  } else if (userRoleStr === "usuario") {
-    userRole = UserRole.VIEWER;
-  } else {
-    userRole = UserRole.VIEWER;
-  }
+  const userRoleStr = (user as any).role as string || 'funcionario';
   
-  // Generate permissions array based on role
-  const derivedPermissions: Permission[] = [];
+  // Mapear roles legacy
+  const roleMap: Record<string, string> = {
+    'usuario': 'funcionario',
+    'superadmin': 'administrador',
+    'admin': 'director_centro',
+    'manager': 'director_centro',
+    'editor': 'funcionario',
+    'viewer': 'funcionario'
+  };
   
-  // SuperAdmin case - has all permissions on all resources
-  if (userRole === UserRole.SUPERADMIN) {
-    // Add wildcard permission for superadmin
-    derivedPermissions.push({
-      resource: '*',
-      level: PermissionLevel.ADMIN
-    });
-    
-    // Also add explicit permissions for all resources for UI representation
-    Object.values(RESOURCES).forEach(resource => {
-      [PermissionLevel.READ, PermissionLevel.WRITE, PermissionLevel.DELETE, PermissionLevel.ADMIN].forEach(level => {
-        derivedPermissions.push({ resource, level });
-      });
-    });
-    
-    return derivedPermissions;
-  }
+  const role = roleMap[userRoleStr] || userRoleStr;
   
-  // For other roles, get permissions from the PERMISSIONS matrix
-  const rolePermissions = PERMISSIONS[userRole];
-  if (rolePermissions) {
-    // For each resource the role has access to
-    Object.entries(rolePermissions).forEach(([resource, levels]) => {
-      // For each permission level granted for this resource
-      levels.forEach(level => {
-        derivedPermissions.push({
-          resource,
-          level
-        });
-      });
-    });
-  }
+  // Import RESOURCES and getRolePermissions from permissions
+  const { getRolePermissions } = require('./permissions');
   
-  return derivedPermissions;
+  return getRolePermissions(role);
 }
 
 /**
@@ -105,12 +77,12 @@ export function usePermissions(): Permission[] {
  * @returns Boolean indicating if the user has super admin role
  */
 export function useIsSuperAdmin(): boolean {
-  const { data: session } = useSession();
+  const { user } = useSupabaseSession();
   
-  if (!session?.user) {
+  if (!user) {
     return false;
   }
   
-  const userRole = session.user.role as string;
-  return userRole === UserRole.SUPERADMIN;
+  const userRole = (user as any).role as string || '';
+  return userRole === 'administrador' || userRole === 'superadmin';
 }

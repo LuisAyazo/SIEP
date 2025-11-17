@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import PermissionGuard from '../../../components/PermissionGuard';
-import { RESOURCES, ACTIONS } from '../../auth/permissions';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionLevel } from '@/app/auth/permissions';
 
 // Mock report data
 const reportsData = [
@@ -113,7 +113,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <PermissionGuard resource={RESOURCES.REPORTS} action={ACTIONS.READ}>
+    <PermissionGuard resource="reports" requiredPermission={PermissionLevel.READ}>
       <div className="container mx-auto bg-white rounded-lg shadow p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Reportes Financieros</h1>

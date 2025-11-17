@@ -3,11 +3,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCenterContext, Center } from './providers/CenterContext';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 
 const CenterSelectorMenu: React.FC = () => {
   const { currentCenter, availableCenters, setCenter } = useCenterContext();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Cerrar el menú cuando se hace clic fuera de él
   useEffect(() => {
@@ -25,8 +28,33 @@ const CenterSelectorMenu: React.FC = () => {
 
   // Manejar el cambio de centro
   const handleCenterChange = (center: Center) => {
+    console.log("CenterSelectorMenu: Cambiando a centro:", center.name, "con slug:", center.slug);
+    
+    // Guardar el centro en localStorage
+    try {
+      localStorage.setItem('selectedCenter', JSON.stringify(center));
+      console.log("Centro guardado en localStorage:", center.name);
+    } catch (error) {
+      console.error("Error al guardar en localStorage:", error);
+    }
+    
+    // Establecer el centro en el contexto
     setCenter(center);
     setIsOpen(false);
+    
+    // Preservar la ruta actual pero cambiar el slug del centro
+    let targetPath = `/center/${center.slug}/dashboard`;
+    
+    if (pathname && pathname.includes('/center/')) {
+      // Extraer la parte después de /dashboard/ si existe
+      const pathParts = pathname.split('/dashboard/');
+      if (pathParts.length > 1 && pathParts[1]) {
+        targetPath = `/center/${center.slug}/dashboard/${pathParts[1]}`;
+      }
+    }
+    
+    console.log("Navegando a:", targetPath);
+    router.push(targetPath);
   };
 
   // Manejar la apertura del menú de configuración para centros

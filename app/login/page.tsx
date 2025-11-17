@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { AVAILABLE_CENTERS } from '../../components/providers/CenterContext';
@@ -10,11 +11,13 @@ import { AVAILABLE_CENTERS } from '../../components/providers/CenterContext';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status } = useSession();
+  const { session, loading } = useSupabaseSession();
+  const supabase = createClient();
 
   // Helper function to get default center slug
   const getDefaultCenterSlug = () => {
@@ -38,17 +41,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Si ya está autenticado, redireccionar al dashboard específico del centro
-    if (status === 'authenticated') {
+    if (!loading && session) {
       const centerSlug = getDefaultCenterSlug();
       router.push(`/center/${centerSlug}/dashboard`);
     }
     
-    // Si hay error en la URL (redirigido de NextAuth)
+    // Si hay error en la URL
     const errorParam = searchParams?.get('error');
     if (errorParam) {
       setError('Hubo un error al iniciar sesión. Por favor intente de nuevo.');
     }
-  }, [status, router, searchParams]);
+  }, [session, loading, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,16 +64,15 @@ export default function LoginPage() {
         throw new Error('Solo se permiten correos con dominio @unicartagena.edu.co');
       }
       
-      // Usar NextAuth para la autenticación
-      const result = await signIn('credentials', {
+      // Autenticación con Supabase
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false
       });
       
-      if (result?.error) {
+      if (signInError) {
         setError('Credenciales incorrectas. Intente de nuevo.');
-      } else if (result?.ok) {
+      } else if (data.session) {
         const centerSlug = getDefaultCenterSlug();
         router.push(`/center/${centerSlug}/dashboard`);
       }
@@ -90,8 +92,8 @@ export default function LoginPage() {
             <Image
               src="/images/logo-oficial.png"
               alt="Universidad de Cartagena Logo"
-              layout="fill"
-              objectFit="contain"
+              fill
+              style={{ objectFit: 'contain' }}
               priority
               className="drop-shadow-lg"
             />
@@ -189,14 +191,31 @@ export default function LoginPage() {
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full pl-10 px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                    className="appearance-none block w-full pl-10 pr-10 px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-amber-500 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                        <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -225,7 +244,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>

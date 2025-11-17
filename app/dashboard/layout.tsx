@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { signOut, useSession } from "next-auth/react";
+import { useSupabaseSession } from "@/components/providers/SessionProvider";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { usePermission } from "@/app/auth/hooks";
 import { hasPermission, getRolePermissions, PermissionLevel, UserRole } from "../auth/permissions";
@@ -43,7 +44,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { user, session, loading } = useSupabaseSession();
   const router = useRouter();
   const pathname = usePathname();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -56,13 +57,13 @@ export default function DashboardLayout({
 
   // Redirigir si no está autenticado
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!loading && !user) {
       router.push("/login");
     }
-  }, [status, router]);
+  }, [loading, user, router]);
 
   // Evitar renderizar hasta que la sesión esté cargada para evitar hydration mismatch
-  if (status === "loading") {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <span className="text-gray-500">Cargando...</span>
@@ -71,9 +72,9 @@ export default function DashboardLayout({
   }
 
   // Obtener datos del usuario autenticado
-  const userRole = session?.user?.role || null;
-  const userName = session?.user?.name || null;
-  const userEmail = session?.user?.email || null;
+  const userRole = (user as any)?.role || null;
+  const userName = user?.email?.split('@')[0] || user?.user_metadata?.full_name || null;
+  const userEmail = user?.email || null;
 
   // Toggle section expand/collapse
   const toggleSection = (section: string) => {
@@ -447,8 +448,10 @@ export default function DashboardLayout({
   };
 
   // Function to handle logout
-  const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
   };
   
   // Find current page name

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { hasPermission, PermissionLevel, UserRole } from '@/app/auth/permissions';
-import { useSession } from 'next-auth/react';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
 
 // Define proper ficha status types
 type StatusType = 'borrador' | 'activo' | 'finalizado' | 'cancelado';
@@ -118,8 +118,8 @@ export default function FormsPage() {
   const [filterStatus, setFilterStatus] = useState<StatusType | 'todos'>('todos');
   
   // Fix permission hooks
-  const { data: session } = useSession();
-  const userRole = session?.user?.role as UserRole | undefined;
+  const { user } = useSupabaseSession();
+  const userRole = (user as any)?.role as UserRole | undefined;
   
   // Check permissions manually with correct PermissionLevel values
   const canCreate = hasPermission({ role: userRole }, 'forms', PermissionLevel.WRITE);

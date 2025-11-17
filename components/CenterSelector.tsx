@@ -55,6 +55,28 @@ const CenterSelector: React.FC = () => {
     };
   }, []);
 
+  // Función para actualizar URL cuando se selecciona un centro
+  const updateUrlToMatchCenter = useCallback((center: Center) => {
+    if (!pathname || !center) return;
+    
+    if (pathname.includes('/center/')) {
+      // Construir la nueva ruta con el centro seleccionado
+      const basePath = pathname.split('/').slice(0, 2).join('/');
+      const remainingPath = pathname.split('/').slice(3).join('/');
+      
+      // Construir la nueva URL
+      let newPath = `${basePath}/${center.slug}`;
+      if (remainingPath) {
+        newPath += `/${remainingPath}`;
+      } else {
+        newPath += '/dashboard';
+      }
+      
+      console.log(`CenterSelector: Actualizando URL a ${newPath}`);
+      router.push(newPath);
+    }
+  }, [pathname, router]);
+
   // Memoized select center handler to prevent recreation
   const handleSelectCenter = useCallback((center: Center) => {
     if (!center) return;
@@ -71,11 +93,14 @@ const CenterSelector: React.FC = () => {
       
       // Update the context state
       setCenter(center);
+
+      // Update the URL to match the selected center
+      updateUrlToMatchCenter(center);
     } else {
       // Just close the dropdown if selecting the same center
       setIsOpen(false);
     }
-  }, [currentCenter, setCenter]);
+  }, [currentCenter, setCenter, updateUrlToMatchCenter]);
 
   return (
     <div className="relative center-selector-container">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -75,6 +75,8 @@ const availablePermissions = [
 ];
 
 export default function CreateRolePage() {
+  const params = useParams();
+  const centerSlug = params.centerSlug as string;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -135,7 +137,7 @@ export default function CreateRolePage() {
       // Simulación de envío al API
       setTimeout(() => {
         setIsSubmitting(false);
-        router.push('/dashboard/roles');
+        router.push(`/center/${centerSlug}/dashboard/roles`);
       }, 1000);
       
     } catch (err) {
@@ -339,11 +341,11 @@ export default function CreateRolePage() {
             </div>
           </motion.div>
           
-          <motion.div 
+          <motion.div
             className="flex justify-end space-x-3 pt-5"
             variants={itemVariants}
           >
-            <Link href="/dashboard/roles">
+            <Link href={`/center/${centerSlug}/dashboard/roles`}>
               <motion.button
                 type="button"
                 className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"

@@ -1,5 +1,7 @@
-import { useSession } from 'next-auth/react';
+'use client';
+
 import { useCallback, useMemo } from 'react';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import { PermissionLevel, UserRole, getSessionWithRole, hasPermission } from './permissions';
 
 /**
@@ -9,22 +11,30 @@ import { PermissionLevel, UserRole, getSessionWithRole, hasPermission } from './
  * @returns An object with the permission status and session data
  */
 export function usePermission(resource: string, level: PermissionLevel) {
-  const { data: session, status } = useSession();
+  const { user, session, loading } = useSupabaseSession();
   
   const sessionWithRole = useMemo(() => {
-    return getSessionWithRole(session);
-  }, [session]);
+    if (!user) return null;
+    
+    // Obtener datos del perfil desde user metadata o construir manualmente
+    const profileData = {
+      role: (user as any).role || 'funcionario',
+      center_id: (user as any).centerId || null
+    };
+    
+    return getSessionWithRole(user as any, profileData);
+  }, [user]);
   
   const checkPermission = useCallback(() => {
     if (!sessionWithRole || !sessionWithRole.user) {
       return false;
     }
-    return hasPermission(sessionWithRole.user, resource, level);
+    return hasPermission(sessionWithRole.user as any, resource, level);
   }, [sessionWithRole, resource, level]);
 
   return {
     hasPermission: checkPermission(),
-    isLoading: status === 'loading',
+    isLoading: loading,
     session: sessionWithRole,
     isAuthenticated: !!sessionWithRole,
     userRole: sessionWithRole?.user?.role as UserRole | undefined,
@@ -37,13 +47,27 @@ export function usePermission(resource: string, level: PermissionLevel) {
  * @returns The current user's role or undefined
  */
 export function useUserRole() {
-  const { data: session } = useSession();
+  const { user } = useSupabaseSession();
   
-  const sessionWithRole = useMemo(() => {
-    return getSessionWithRole(session);
-  }, [session]);
+  const role = useMemo(() => {
+    if (!user) return undefined;
+    
+    const userRole = (user as any).role as string || 'funcionario';
+    
+    // Mapear roles legacy
+    const roleMap: Record<string, string> = {
+      'usuario': 'funcionario',
+      'superadmin': 'administrador',
+      'admin': 'director_centro',
+      'manager': 'director_centro',
+      'editor': 'funcionario',
+      'viewer': 'funcionario'
+    };
+    
+    return roleMap[userRole] || userRole;
+  }, [user]);
   
-  return sessionWithRole?.user?.role as UserRole | undefined;
+  return role as UserRole | undefined;
 }
 
 /**
@@ -51,13 +75,14 @@ export function useUserRole() {
  * @returns The current user's center ID or undefined
  */
 export function useUserCenter() {
-  const { data: session } = useSession();
+  const { user } = useSupabaseSession();
   
-  const sessionWithRole = useMemo(() => {
-    return getSessionWithRole(session);
-  }, [session]);
+  const centerId = useMemo(() => {
+    if (!user) return undefined;
+    return (user as any).centerId || null;
+  }, [user]);
   
-  return sessionWithRole?.user?.centerId;
+  return centerId;
 }
 
 /**
@@ -65,11 +90,13 @@ export function useUserCenter() {
  * @returns Boolean indicating if the user is a superadmin
  */
 export function useIsSuperAdmin() {
-  const { data: session } = useSession();
+  const { user } = useSupabaseSession();
   
-  const sessionWithRole = useMemo(() => {
-    return getSessionWithRole(session);
-  }, [session]);
+  const isSuperAdmin = useMemo(() => {
+    if (!user) return false;
+    const userRole = (user as any).role as string || '';
+    return userRole === 'administrador' || userRole === 'superadmin';
+  }, [user]);
   
-  return !!sessionWithRole?.user?.role && sessionWithRole.user.role === UserRole.SUPERADMIN;
+  return isSuperAdmin;
 }
