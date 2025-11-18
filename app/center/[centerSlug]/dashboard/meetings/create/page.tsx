@@ -117,7 +117,7 @@ export default function CreateMeetingPage({
       action: 'TEMPLATE',
       text: formData.title,
       dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
-      details: formData.description || 'Reunión programada desde SIEP',
+      details: formData.description || 'Comité programado desde SIEP',
       add: participantEmails
     });
 
@@ -164,7 +164,7 @@ export default function CreateMeetingPage({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al crear reunión');
+        throw new Error(data.error || 'Error al crear comité');
       }
 
       router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings`);
@@ -187,8 +187,8 @@ export default function CreateMeetingPage({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nueva Reunión</h1>
-          <p className="text-gray-600 mt-1">Programa una nueva reunión del centro</p>
+          <h1 className="text-3xl font-bold text-gray-900">Nuevo Comité</h1>
+          <p className="text-gray-600 mt-1">Programa un nuevo comité del centro</p>
         </div>
       </div>
 
@@ -211,7 +211,7 @@ export default function CreateMeetingPage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Título de la Reunión *
+              Título del Comité *
             </label>
             <input
               type="text"
@@ -220,7 +220,7 @@ export default function CreateMeetingPage({
               onChange={handleInputChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ej: Reunión de Planificación Mensual"
+              placeholder="Ej: Comité de Planificación Mensual"
             />
           </div>
 
@@ -311,7 +311,7 @@ export default function CreateMeetingPage({
             {formData.meeting_platform && formData.meeting_platform !== 'google_meet' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  URL de la Reunión
+                  URL del Comité
                 </label>
                 <input
                   type="url"
@@ -335,7 +335,7 @@ export default function CreateMeetingPage({
                     🎉 Google Meet se generará automáticamente
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la reunión, se generará un enlace de Google Calendar con Google Meet integrado. 
+                    Al crear el comité, se generará un enlace de Google Calendar con Google Meet integrado.
                     Los participantes recibirán una invitación por email con el enlace de la videollamada.
                   </p>
                   <p className="text-xs text-blue-600 mt-2 font-medium">
@@ -410,7 +410,7 @@ export default function CreateMeetingPage({
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creando...' : 'Crear Reunión'}
+            {loading ? 'Creando...' : 'Crear Comité'}
           </button>
         </div>
       </form>

@@ -137,11 +137,11 @@ const permissionDescriptions: {[key: string]: string} = {
   'solicitudes.upload_files': 'Subir archivos Excel',
   'solicitudes.send_to_group': 'Enviar al grupo revisor',
   
-  // Meetings
-  'meetings.create': 'Crear reuniones',
-  'meetings.read': 'Ver reuniones',
-  'meetings.update': 'Modificar reuniones',
-  'meetings.delete': 'Cancelar reuniones',
+  // Meetings (Comités)
+  'meetings.create': 'Crear comités',
+  'meetings.read': 'Ver comités',
+  'meetings.update': 'Modificar comités',
+  'meetings.delete': 'Cancelar comités',
   
   // Centros
   'centers.manage': 'Gestionar centros',
@@ -169,7 +169,7 @@ const permissionGroups = {
     'solicitudes.approve', 'solicitudes.reject', 'solicitudes.assign', 
     'solicitudes.comment', 'solicitudes.upload_files', 'solicitudes.send_to_group'
   ],
-  'Reuniones': ['meetings.create', 'meetings.read', 'meetings.update', 'meetings.delete'],
+  'Comités': ['meetings.create', 'meetings.read', 'meetings.update', 'meetings.delete'],
   'Reportes': ['reports.own', 'reports.basic', 'reports.center', 'reports.all', 'reports.view'],
   'Sistema': ['centers.manage', 'budget.read', 'system.configure']
 };

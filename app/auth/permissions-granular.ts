@@ -13,7 +13,7 @@ export const GRANULAR_PERMISSIONS = {
   SOLICITUDES_REJECT: 'solicitudes.reject',
   SOLICITUDES_ASSIGN: 'solicitudes.assign',
   
-  // Reuniones (Meetings)
+  // Comités (Meetings)
   MEETINGS_CREATE: 'meetings.create',
   MEETINGS_READ: 'meetings.read',
   MEETINGS_UPDATE: 'meetings.update',
@@ -104,7 +104,7 @@ export const ROLE_PERMISSIONS: Record<string, GranularPermission[]> = {
     GRANULAR_PERMISSIONS.SOLICITUDES_REJECT,
     GRANULAR_PERMISSIONS.SOLICITUDES_ASSIGN,
     
-    // Reuniones - gestión completa
+    // Comités - gestión completa
     GRANULAR_PERMISSIONS.MEETINGS_CREATE,
     GRANULAR_PERMISSIONS.MEETINGS_READ,
     GRANULAR_PERMISSIONS.MEETINGS_UPDATE,

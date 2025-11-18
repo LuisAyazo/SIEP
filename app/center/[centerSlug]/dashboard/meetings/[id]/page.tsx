@@ -89,7 +89,7 @@ export default function MeetingDetailPage({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cargar reunión');
+        throw new Error(data.error || 'Error al cargar comité');
       }
 
       setMeeting(data.meeting);
@@ -126,7 +126,7 @@ export default function MeetingDetailPage({
         throw new Error(data.error || 'Error al actualizar asistencia');
       }
 
-      // Recargar reunión
+      // Recargar comité
       await loadMeeting();
     } catch (err: any) {
       console.error('Error:', err);
@@ -139,7 +139,7 @@ export default function MeetingDetailPage({
   async function handleCancelMeeting() {
     if (!meeting) return;
 
-    if (!confirm('¿Estás seguro de que deseas cancelar esta reunión?')) {
+    if (!confirm('¿Estás seguro de que deseas cancelar este comité?')) {
       return;
     }
 
@@ -151,7 +151,7 @@ export default function MeetingDetailPage({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cancelar reunión');
+        throw new Error(data.error || 'Error al cancelar comité');
       }
 
       router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings`);
@@ -236,7 +236,7 @@ export default function MeetingDetailPage({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando reunión...</p>
+          <p className="mt-4 text-gray-600">Cargando comité...</p>
         </div>
       </div>
     );
@@ -246,7 +246,7 @@ export default function MeetingDetailPage({
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
         <AlertCircle className="w-5 h-5" />
-        {error || 'Reunión no encontrada'}
+        {error || 'Comité no encontrado'}
       </div>
     );
   }
@@ -269,7 +269,7 @@ export default function MeetingDetailPage({
           </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{meeting.title}</h1>
-            <p className="text-gray-600 mt-1">Detalles de la reunión</p>
+            <p className="text-gray-600 mt-1">Detalles del comité</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function MeetingDetailPage({
               className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              Cancelar Reunión
+              Cancelar Comité
             </button>
           )}
         </div>
@@ -344,7 +344,7 @@ export default function MeetingDetailPage({
                   className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
                 >
                   <Video className="w-4 h-4" />
-                  Unirse a la reunión
+                  Unirse al comité
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>

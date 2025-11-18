@@ -97,7 +97,7 @@ export default function MeetingsPage({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cargar reuniones');
+        throw new Error(data.error || 'Error al cargar comités');
       }
 
       setMeetings(data.meetings || []);
@@ -221,15 +221,15 @@ export default function MeetingsPage({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reuniones</h1>
-          <p className="text-gray-600 mt-1">Gestiona las reuniones del centro</p>
+          <h1 className="text-3xl font-bold text-gray-900">Comités</h1>
+          <p className="text-gray-600 mt-1">Gestiona los comités del centro</p>
         </div>
         <button
           onClick={() => router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings/create`)}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Nueva Reunión
+          Nuevo Comité
         </button>
       </div>
 
@@ -272,17 +272,17 @@ export default function MeetingsPage({
         >
           <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No hay reuniones
+            No hay comités
           </h3>
           <p className="text-gray-600 mb-4">
-            Crea tu primera reunión para comenzar
+            Crea tu primer comité para comenzar
           </p>
           <button
             onClick={() => router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings/create`)}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 hover:scale-105"
           >
             <Plus className="w-5 h-5" />
-            Nueva Reunión
+            Nuevo Comité
           </button>
         </motion.div>
       ) : (
@@ -337,7 +337,7 @@ export default function MeetingsPage({
                 {meeting.meeting_url && (
                   <div className="flex items-center gap-2 text-sm text-blue-600 mb-4">
                     <Video className="w-4 h-4" />
-                    <span className="font-medium">{meeting.meeting_platform || 'Reunión virtual'}</span>
+                    <span className="font-medium">{meeting.meeting_platform || 'Comité virtual'}</span>
                   </div>
                 )}
 

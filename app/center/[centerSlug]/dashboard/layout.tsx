@@ -371,7 +371,7 @@ export default function DashboardLayout({
           granularPermission: GRANULAR_PERMISSIONS.HISTORY_READ
         },
         {
-          name: "Reuniones",
+          name: "Comités",
           href: `/center/${centerSlug}/dashboard/meetings`,
           icon: (
             <svg

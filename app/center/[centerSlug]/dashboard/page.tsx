@@ -168,7 +168,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           setUpcomingMeetings(data.meetings || []);
         }
       } catch (error) {
-        console.error('Error al cargar reuniones:', error);
+        console.error('Error al cargar comités:', error);
       } finally {
         setLoadingMeetings(false);
       }
@@ -336,7 +336,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Calendar className="h-6 w-6 text-amber-600 mr-2" />
-              <h3 className="text-lg font-medium text-gray-900">Reuniones Próximas</h3>
+              <h3 className="text-lg font-medium text-gray-900">Comités Próximos</h3>
             </div>
             <Link href={`/center/${resolvedParams.centerSlug}/dashboard/meetings`}>
               <button className="text-amber-600 hover:text-amber-700 text-sm font-medium">
@@ -352,7 +352,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           ) : upcomingMeetings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-              <p>No hay reuniones programadas</p>
+              <p>No hay comités programados</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -381,7 +381,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                         </div>
                         {meeting.meeting_link && (
                           <div className="mt-1 text-xs text-blue-600">
-                            📹 Reunión virtual
+                            📹 Comité virtual
                           </div>
                         )}
                       </div>

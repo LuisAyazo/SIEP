@@ -51,11 +51,11 @@ const availablePermissions = {
     { id: 'solicitudes.comment', label: 'Comentar en solicitudes' },
     { id: 'solicitudes.upload_files', label: 'Subir archivos Excel' }
   ],
-  'Reuniones': [
-    { id: 'meetings.create', label: 'Crear reuniones' },
-    { id: 'meetings.read', label: 'Ver reuniones' },
-    { id: 'meetings.update', label: 'Editar reuniones' },
-    { id: 'meetings.delete', label: 'Eliminar reuniones' },
+  'Comités': [
+    { id: 'meetings.create', label: 'Crear comités' },
+    { id: 'meetings.read', label: 'Ver comités' },
+    { id: 'meetings.update', label: 'Editar comités' },
+    { id: 'meetings.delete', label: 'Eliminar comités' },
     { id: 'meetings.manage_participants', label: 'Gestionar participantes' }
   ],
   'Fichas': [
