@@ -4,9 +4,32 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionLevel, RESOURCES } from '@/app/auth/permissions';
+import { useCenterContext } from '@/components/providers/CenterContext';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
+import { createClient } from '@/lib/supabase/client';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  created_at: string;
+  assigned_centers: string[];
+}
 
 export default function SettingsPage() {
+  const supabase = createClient();
+  const { availableCenters } = useCenterContext();
   const [activeTab, setActiveTab] = useState('general');
+  
+  // Estados para asignación de centros
+  const [users, setUsers] = useState<User[]>([]);
+  const [userCenterAssignments, setUserCenterAssignments] = useState<Record<string, string[]>>({});
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isSavingCenters, setIsSavingCenters] = useState(false);
+  const [showCentersSuccess, setShowCentersSuccess] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     newFicha: true,
@@ -20,6 +43,111 @@ export default function SettingsPage() {
     showWelcome: true,
     language: 'es'
   });
+  
+  // Cargar usuarios cuando se selecciona la pestaña de centros
+  useEffect(() => {
+    if (activeTab === 'centers') {
+      loadUsers();
+    }
+  }, [activeTab]);
+  
+  const loadUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const { data: usersData } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          email,
+          full_name,
+          created_at,
+          user_roles (roles!inner (name, display_name)),
+          user_centers (center_id)
+        `);
+
+      const formattedUsers: User[] = usersData?.map((userData: any) => {
+        const roles = userData.user_roles?.map((ur: any) => ur.roles?.name).filter(Boolean) || [];
+        const specificRole = roles.find((r: string) => r !== 'funcionario');
+        const primaryRole = specificRole || roles[0] || 'funcionario';
+        
+        const primaryRoleData = userData.user_roles?.find((ur: any) => ur.roles?.name === primaryRole);
+        const role = primaryRoleData?.roles as any;
+        const roleDisplayName = role?.display_name || primaryRole;
+
+        const assigned_centers = userData.user_centers?.map((uc: any) => uc.center_id) || [];
+
+        return {
+          id: userData.id,
+          email: userData.email,
+          full_name: userData.full_name,
+          role: roleDisplayName,
+          created_at: userData.created_at,
+          assigned_centers
+        };
+      }) || [];
+
+      setUsers(formattedUsers);
+      
+      const assignments: Record<string, string[]> = {};
+      formattedUsers.forEach(user => {
+        assignments[user.id] = [...user.assigned_centers];
+      });
+      setUserCenterAssignments(assignments);
+      
+      console.log('✅ Usuarios cargados:', formattedUsers.length);
+      console.log('✅ Asignaciones iniciales:', assignments);
+    } catch (error) {
+      console.error('❌ Error al cargar usuarios:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+  
+  const handleCenterAssignmentChange = (userId: string, centerId: string, isChecked: boolean) => {
+    setUserCenterAssignments(prev => {
+      const current = [...(prev[userId] || [])];
+      let newAssignments;
+      
+      if (isChecked) {
+        if (!current.includes(centerId)) {
+          newAssignments = { ...prev, [userId]: [...current, centerId] };
+        } else {
+          return prev;
+        }
+      } else {
+        newAssignments = { ...prev, [userId]: current.filter(id => id !== centerId) };
+      }
+      
+      console.log(`✅ Usuario ${userId}: nuevos centros =`, newAssignments[userId]);
+      return newAssignments;
+    });
+  };
+  
+  const handleSaveCenterAssignments = async () => {
+    setIsSavingCenters(true);
+    
+    try {
+      for (const [userId, centerIds] of Object.entries(userCenterAssignments)) {
+        await supabase.from('user_centers').delete().eq('user_id', userId);
+        
+        if (centerIds.length > 0) {
+          const assignments = centerIds.map(centerId => ({
+            user_id: userId,
+            center_id: centerId
+          }));
+          
+          await supabase.from('user_centers').insert(assignments);
+        }
+      }
+      
+      setShowCentersSuccess(true);
+      setTimeout(() => setShowCentersSuccess(false), 3000);
+    } catch (error) {
+      console.error('❌ Error al guardar asignaciones:', error);
+    } finally {
+      setIsSavingCenters(false);
+    }
+  };
   
   // Debug: Log display settings changes
   useEffect(() => {
@@ -193,6 +321,16 @@ export default function SettingsPage() {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 Prefijos
+              </button>
+              <button
+                onClick={() => setActiveTab('centers')}
+                className={`${
+                  activeTab === 'centers'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Centros
               </button>
             </nav>
           </div>
@@ -799,6 +937,137 @@ export default function SettingsPage() {
                     La estructura típica es: {"{PREFIJO}"}-{"{AÑO}"}-{"{SECUENCIAL}"}.
                   </p>
                 </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'centers' && (
+              <motion.div 
+                className="space-y-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                key="centers"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Asignación de Centros a Usuarios</h3>
+                    <p className="mt-1 text-sm text-gray-500">Gestiona qué usuarios tienen acceso a cada centro.</p>
+                  </div>
+                </div>
+
+                {/* Buscador de usuarios */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {showCentersSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-800 rounded-md p-4">
+                    <div className="flex">
+                      <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a 1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p className="ml-3">Asignaciones guardadas correctamente.</p>
+                    </div>
+                  </div>
+                )}
+
+                {isLoadingUsers ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                            {availableCenters.map(center => (
+                              <th key={center.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {center.name}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {users
+                            .filter(user =>
+                              user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            .map(user => (
+                            <tr key={user.id}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
+                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  {user.role}
+                                </span>
+                              </td>
+                              {availableCenters.map(center => {
+                                const isChecked = userCenterAssignments[user.id]?.includes(center.id) || false;
+                                return (
+                                  <td key={`${user.id}-${center.id}`} className="px-6 py-4 whitespace-nowrap text-center">
+                                    <input 
+                                      type="checkbox" 
+                                      className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                                      checked={isChecked}
+                                      onChange={(e) => handleCenterAssignmentChange(user.id, center.id, e.target.checked)}
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                          {users.filter(user =>
+                            user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                          ).length === 0 && (
+                            <tr>
+                              <td colSpan={2 + availableCenters.length} className="px-6 py-4 text-center text-sm text-gray-500">
+                                No se encontraron usuarios que coincidan con "{searchTerm}"
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveCenterAssignments}
+                        disabled={isSavingCenters}
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${isSavingCenters ? 'bg-gray-400' : 'bg-amber-600 hover:bg-amber-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500`}
+                      >
+                        {isSavingCenters && (
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        )}
+                        {isSavingCenters ? 'Guardando...' : 'Guardar Asignaciones'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </div>
