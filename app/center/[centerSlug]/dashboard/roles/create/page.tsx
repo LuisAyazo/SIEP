@@ -209,7 +209,7 @@ export default function CreateRolePage() {
               type="text"
               id="name"
               {...register("name", { required: "El nombre del rol es obligatorio" })}
-              className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12"
+              className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md h-12 text-gray-900 bg-white"
               placeholder="Ej: Administrador de Documentos"
             />
             {errors.name && (

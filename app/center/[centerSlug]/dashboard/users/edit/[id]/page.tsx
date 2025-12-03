@@ -242,7 +242,7 @@ export default function EditUserPage() {
                   type="text"
                   value={formData.full_name}
                   onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                  className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   required
                 />
               </div>
@@ -255,7 +255,7 @@ export default function EditUserPage() {
                   type="email"
                   value={formData.email}
                   disabled
-                  className="w-full px-4 h-12 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                  className="w-full px-4 h-12 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">El correo no puede ser modificado</p>
               </div>
@@ -308,7 +308,7 @@ export default function EditUserPage() {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                     placeholder="Dejar en blanco para no cambiar"
                   />
                 </div>
@@ -321,7 +321,7 @@ export default function EditUserPage() {
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                    className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 h-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                     placeholder="Confirma la nueva contraseña"
                   />
                 </div>

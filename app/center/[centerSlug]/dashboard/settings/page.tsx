@@ -360,7 +360,7 @@ export default function SettingsPage() {
                       type="text"
                       name="name"
                       id="name"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                       defaultValue="Admin Usuario"
                     />
                   </div>
@@ -373,7 +373,7 @@ export default function SettingsPage() {
                       type="email"
                       name="email"
                       id="email"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                       defaultValue="admin@example.com"
                     />
                   </div>
@@ -386,7 +386,7 @@ export default function SettingsPage() {
                       type="text"
                       name="role"
                       id="role"
-                      className="mt-1 bg-gray-50 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                      className="mt-1 bg-gray-50 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900"
                       defaultValue="Administrador"
                       disabled
                     />
@@ -425,7 +425,7 @@ export default function SettingsPage() {
                         type="password"
                         name="current-password"
                         id="current-password"
-                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                       />
                     </div>
 
@@ -438,7 +438,7 @@ export default function SettingsPage() {
                           type="password"
                           name="new-password"
                           id="new-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         />
                       </div>
 
@@ -450,7 +450,7 @@ export default function SettingsPage() {
                           type="password"
                           name="confirm-password"
                           id="confirm-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         />
                       </div>
                     </div>
@@ -850,7 +850,7 @@ export default function SettingsPage() {
                         id="fichasPrefix"
                         value={prefixSettings.fichasPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         placeholder="FC-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: FC-2025-001</p>
@@ -868,7 +868,7 @@ export default function SettingsPage() {
                         id="presupuestoPrefix"
                         value={prefixSettings.presupuestoPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         placeholder="PS-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: PS-2025-001</p>
@@ -886,7 +886,7 @@ export default function SettingsPage() {
                         id="proyectosPrefix"
                         value={prefixSettings.proyectosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         placeholder="PY-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: PY-2025-001</p>
@@ -904,7 +904,7 @@ export default function SettingsPage() {
                         id="documentosPrefix"
                         value={prefixSettings.documentosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         placeholder="DOC-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: DOC-2025-001</p>
@@ -922,7 +922,7 @@ export default function SettingsPage() {
                         id="informesPrefix"
                         value={prefixSettings.informesPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
                         placeholder="INF-"
                       />
                       <p className="mt-1 text-xs text-gray-500">Ejemplo: INF-2025-001</p>
@@ -967,7 +967,7 @@ export default function SettingsPage() {
                       placeholder="Buscar por nombre o email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm text-gray-900"
                     />
                   </div>
                 </div>

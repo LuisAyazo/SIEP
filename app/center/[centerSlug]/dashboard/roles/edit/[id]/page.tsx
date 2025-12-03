@@ -278,7 +278,7 @@ export default function EditRolePage() {
                 id="roleName"
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500 text-gray-900 bg-gray-50"
                 placeholder="ej: gerente"
                 required
                 disabled

@@ -276,7 +276,7 @@ export default function CreateUserPage() {
                     type="text"
                     name="full_name"
                     id="full_name"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.full_name ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 text-gray-900 bg-white ${errors.full_name ? 'border-red-300' : ''}`}
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder="Ingrese el nombre completo"
@@ -306,7 +306,7 @@ export default function CreateUserPage() {
                     type="email"
                     name="email"
                     id="email"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.email ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 text-gray-900 bg-white ${errors.email ? 'border-red-300' : ''}`}
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="ejemplo@unicartagena.edu.co"
@@ -337,7 +337,7 @@ export default function CreateUserPage() {
                       type={showPassword ? "text" : "password"}
                       name="password"
                       id="password"
-                      className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 pr-10 sm:text-sm border-gray-300 rounded-md h-12 ${errors.password ? 'border-red-300' : ''}`}
+                      className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 pr-10 sm:text-sm border-gray-300 rounded-md h-12 text-gray-900 bg-white ${errors.password ? 'border-red-300' : ''}`}
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="Mínimo 6 caracteres"
@@ -387,7 +387,7 @@ export default function CreateUserPage() {
                     type={showPassword ? "text" : "password"}
                     name="confirmPassword"
                     id="confirmPassword"
-                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 ${errors.confirmPassword ? 'border-red-300' : ''}`}
+                    className={`shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full px-4 sm:text-sm border-gray-300 rounded-md h-12 text-gray-900 bg-white ${errors.confirmPassword ? 'border-red-300' : ''}`}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Repita la contraseña"
