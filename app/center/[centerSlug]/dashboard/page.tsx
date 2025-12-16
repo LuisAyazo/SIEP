@@ -921,8 +921,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
               <Image 
                 src="/images/footer-izq.png" 
                 alt="Footer Izquierdo"
-                width={700}
-                height={192}
+                width={560}
+                height={154}
                 className="object-cover w-auto"
               />
             </div>
@@ -930,9 +930,9 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
               <Image 
                 src="/images/footer-der.png" 
                 alt="Footer Derecho"
-                width={355}
-                height={98}
-                className="object-cover w-auto"
+                width={135}
+                height={125}
+                className="w-[180px]"
               />
             </div>
           </div>

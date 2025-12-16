@@ -79,15 +79,18 @@ export default function DashboardLayout({
         .from('user_roles')
         .select('roles(name)')
         .eq('user_id', session.user.id)
-        .single();
+        .limit(1);
       
       if (error) {
         console.error('[DashboardLayout] Error al obtener rol:', error);
         setUserRole(null);
-      } else {
-        const roleName = (data as any)?.roles?.name;
+      } else if (data && data.length > 0) {
+        const roleName = (data[0] as any)?.roles?.name;
         console.log('[DashboardLayout] Rol obtenido:', roleName);
         setUserRole(roleName || null);
+      } else {
+        console.log('[DashboardLayout] No se encontró rol para el usuario');
+        setUserRole(null);
       }
     }
     
@@ -375,7 +378,7 @@ export default function DashboardLayout({
         },
         {
           name: userRole === 'funcionario' ? "Mis Solicitudes" : "Solicitudes",
-          href: `/center/${centerSlug}/dashboard/solicitudes`,
+          href: `/center/${centerSlug}/solicitudes`,
           icon: (
             <svg
               xmlns="http://www.w3.org/2000/svg"

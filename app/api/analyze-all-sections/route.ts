@@ -46,9 +46,11 @@ export async function GET() {
       'ANEXOS'
     ];
     
+    // AUTORIZACIONES tiene 3 subsecciones
     const autorizacionesSubsections = [
-      'AUTORIZACIONES',
-      'MODIFICACIONES'
+      'Autorizaciones Generales',
+      'Modificaciones',
+      'Firmas'
     ];
     
     const result: Record<string, Record<string, SectionData>> = {
@@ -70,6 +72,20 @@ export async function GET() {
       // Detectar sección principal
       if (cellA === 'INFORMACIÓN TÉCNICA' || cellA === 'INFORMACIÓN PRESUPUESTAL' || cellA === 'AUTORIZACIONES') {
         currentMainSection = cellA;
+        
+        // Para AUTORIZACIONES, crear la primera subsección
+        if (cellA === 'AUTORIZACIONES') {
+          currentSubsection = 'Autorizaciones Generales';
+          result['AUTORIZACIONES']['Autorizaciones Generales'] = {
+            name: 'Autorizaciones Generales',
+            startRow: i + 1,
+            fields: [],
+            hasTable: false,
+            tableHeaders: [],
+            tableRows: []
+          };
+        }
+        
         continue;
       }
       
@@ -84,11 +100,7 @@ export async function GET() {
       const isInfoPresupuestal = currentMainSection === 'INFORMACIÓN PRESUPUESTAL' &&
                                 infoPresupuestalSubsections.includes(cellA);
       
-      // Detectar subsección de AUTORIZACIONES (patrón similar a INFORMACIÓN TÉCNICA)
-      const isAutorizaciones = currentMainSection === 'AUTORIZACIONES' &&
-                              autorizacionesSubsections.includes(cellA);
-      
-      if (isInfoTecnica || isAutorizaciones) {
+      if (isInfoTecnica) {
         currentSubsection = cellA;
         
         result[currentMainSection][currentSubsection] = {
@@ -198,8 +210,8 @@ export async function GET() {
           const skipRow = templateData[dataRowIndex];
           const skipCellA = skipRow[0]?.toString().trim() || '';
           
-          // Parar si encontramos otra subsección conocida
-          if (infoPresupuestalSubsections.includes(skipCellA)) {
+          // Parar si encontramos otra subsección conocida O la sección AUTORIZACIONES
+          if (infoPresupuestalSubsections.includes(skipCellA) || skipCellA === 'AUTORIZACIONES') {
             break;
           }
           
@@ -213,6 +225,76 @@ export async function GET() {
       // Recopilar datos de la subsección actual
       if (currentSubsection && result[currentMainSection]?.[currentSubsection]) {
         const subsectionData = result[currentMainSection][currentSubsection];
+        
+        // Para AUTORIZACIONES, detectar cambio de subsección
+        if (currentMainSection === 'AUTORIZACIONES') {
+          // Detectar inicio de subsección MODIFICACIONES
+          if (cellA === 'MODIFICACIONES' && cellB === 'DESCRIPCIÓN') {
+            currentSubsection = 'Modificaciones';
+            result['AUTORIZACIONES']['Modificaciones'] = {
+              name: 'Modificaciones',
+              startRow: i + 1,
+              fields: [],
+              hasTable: false,
+              tableHeaders: [],
+              tableRows: []
+            };
+            continue;
+          }
+          
+          // Detectar inicio de subsección FIRMAS
+          if (cellA === 'Dependencia' && cellB === 'Nombre y Cargo') {
+            currentSubsection = 'Firmas';
+            result['AUTORIZACIONES']['Firmas'] = {
+              name: 'Firmas',
+              startRow: i + 1,
+              fields: [],
+              hasTable: true,
+              tableHeaders: ['Dependencia', 'Nombre y Cargo', 'VoBo'],
+              tableRows: []
+            };
+            
+            // Recopilar filas de la tabla de firmas
+            let firmasRowIndex = i + 1;
+            while (firmasRowIndex < templateData.length) {
+              const firmaRow = templateData[firmasRowIndex];
+              const fCellA = firmaRow[0]?.toString().trim() || '';
+              const fCellB = firmaRow[1]?.toString().trim() || '';
+              
+              // Parar si llegamos al final o encontramos una fila vacía
+              if (!fCellA && !fCellB) break;
+              
+              // Agregar fila de firma
+              result['AUTORIZACIONES']['Firmas'].tableRows.push({
+                row: firmasRowIndex + 1,
+                data: [
+                  firmaRow[0]?.toString().trim() || '',
+                  firmaRow[1]?.toString().trim() || '',
+                  firmaRow[2]?.toString().trim() || ''
+                ]
+              });
+              
+              firmasRowIndex++;
+            }
+            
+            i = firmasRowIndex - 1;
+            continue;
+          }
+          
+          // Procesar campos normales (excepto encabezados)
+          const isAutorizacionesHeader = cellB === 'DESCRIPCIÓN' ||
+                                         cellA.includes('Diligenciado por');
+          
+          if (cellA && !isAutorizacionesHeader && currentSubsection) {
+            subsectionData.fields.push({
+              row: i + 1,
+              label: cellA,
+              value: cellB,
+              type: detectFieldType(cellA, cellB)
+            });
+          }
+          continue;
+        }
         
         // Detectar tabla (3+ columnas con contenido)
         if (cellA && cellB && cellC) {
@@ -265,8 +347,8 @@ export async function GET() {
         }
         
         // Campo simple (label + value)
-        const allSubsections = [...infoTecnicaSubsections, ...infoPresupuestalSubsections];
-        if (cellA && !allSubsections.includes(cellA)) {
+        const allSubsections = [...infoTecnicaSubsections, ...infoPresupuestalSubsections, ...autorizacionesSubsections];
+        if (cellA && !allSubsections.includes(cellA) && !cellA.includes('Diligenciado por')) {
           subsectionData.fields.push({
             row: i + 1,
             label: cellA,
