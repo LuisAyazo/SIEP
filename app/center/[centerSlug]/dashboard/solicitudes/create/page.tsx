@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import PresupuestoForm from '@/components/PresupuestoForm';
+import FondoRotatorioForm from '@/components/FondoRotatorioForm';
+import PlanDePagoForm from '@/components/PlanDePagoForm';
+import ContrapartidaForm from '@/components/ContrapartidaForm';
 
 interface Field {
   row: number;
@@ -24,11 +27,13 @@ interface Subsection {
 interface SectionsData {
   'INFORMACIÓN TÉCNICA': Record<string, Subsection>;
   'INFORMACIÓN PRESUPUESTAL': Record<string, Subsection>;
+  'AUTORIZACIONES': Record<string, Subsection>;
 }
 
 interface SectionNames {
   'INFORMACIÓN TÉCNICA': string[];
   'INFORMACIÓN PRESUPUESTAL': string[];
+  'AUTORIZACIONES': string[];
 }
 
 export default function CreateSolicitudPage() {
@@ -41,13 +46,15 @@ export default function CreateSolicitudPage() {
   const [loadingSections, setLoadingSections] = useState(true);
   const [sectionsData, setSectionsData] = useState<SectionsData>({
     'INFORMACIÓN TÉCNICA': {},
-    'INFORMACIÓN PRESUPUESTAL': {}
+    'INFORMACIÓN PRESUPUESTAL': {},
+    'AUTORIZACIONES': {}
   });
   const [sectionNames, setSectionNames] = useState<SectionNames>({
     'INFORMACIÓN TÉCNICA': [],
-    'INFORMACIÓN PRESUPUESTAL': []
+    'INFORMACIÓN PRESUPUESTAL': [],
+    'AUTORIZACIONES': []
   });
-  const [currentSection, setCurrentSection] = useState<'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL'>('INFORMACIÓN TÉCNICA');
+  const [currentSection, setCurrentSection] = useState<'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES'>('INFORMACIÓN TÉCNICA');
   const [currentSubsection, setCurrentSubsection] = useState(0);
   const [rightMenuCollapsed, setRightMenuCollapsed] = useState(false);
 
@@ -61,7 +68,8 @@ export default function CreateSolicitudPage() {
     // Datos de las secciones
     sections: {
       'INFORMACIÓN TÉCNICA': {} as Record<string, Record<string, any>>,
-      'INFORMACIÓN PRESUPUESTAL': {} as Record<string, Record<string, any>>
+      'INFORMACIÓN PRESUPUESTAL': {} as Record<string, Record<string, any>>,
+      'AUTORIZACIONES': {} as Record<string, Record<string, any>>
     }
   });
 
@@ -80,7 +88,8 @@ export default function CreateSolicitudPage() {
           // Inicializar datos vacíos para cada sección y subsección
           const initialData = {
             'INFORMACIÓN TÉCNICA': {} as Record<string, Record<string, any>>,
-            'INFORMACIÓN PRESUPUESTAL': {} as Record<string, Record<string, any>>
+            'INFORMACIÓN PRESUPUESTAL': {} as Record<string, Record<string, any>>,
+            'AUTORIZACIONES': {} as Record<string, Record<string, any>>
           };
           
           // Inicializar INFORMACIÓN TÉCNICA
@@ -120,6 +129,20 @@ export default function CreateSolicitudPage() {
             }
           });
           
+          // Inicializar AUTORIZACIONES
+          Object.keys(data.sections['AUTORIZACIONES'] || {}).forEach(key => {
+            initialData['AUTORIZACIONES'][key] = {};
+            const subsection = data.sections['AUTORIZACIONES'][key];
+            
+            subsection.fields.forEach((field: Field) => {
+              initialData['AUTORIZACIONES'][key][field.label] = '';
+            });
+            
+            if (subsection.hasTable) {
+              initialData['AUTORIZACIONES'][key]['_table'] = [];
+            }
+          });
+          
           setFormData(prev => ({
             ...prev,
             sections: initialData
@@ -135,7 +158,7 @@ export default function CreateSolicitudPage() {
     loadSections();
   }, []);
 
-  const handleInputChange = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string, fieldLabel: string, value: any) => {
+  const handleInputChange = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string, fieldLabel: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       sections: {
@@ -167,7 +190,7 @@ export default function CreateSolicitudPage() {
     return cleaned ? parseInt(cleaned, 10) : 0;
   };
 
-  const handleTableChange = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string, rowIndex: number, colIndex: number, value: string) => {
+  const handleTableChange = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string, rowIndex: number, colIndex: number, value: string) => {
     setFormData(prev => {
       const currentTable = prev.sections[section][subsectionKey]._table || [];
       const newTable = [...currentTable];
@@ -237,7 +260,7 @@ export default function CreateSolicitudPage() {
     });
   };
 
-  const addTableRow = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string) => {
+  const addTableRow = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string) => {
     setFormData(prev => {
       const currentTable = prev.sections[section][subsectionKey]._table || [];
       const subsection = sectionsData[section][subsectionKey];
@@ -278,7 +301,7 @@ export default function CreateSolicitudPage() {
     });
   };
 
-  const removeTableRow = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string, rowIndex: number) => {
+  const removeTableRow = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string, rowIndex: number) => {
     setFormData(prev => {
       const currentTable = prev.sections[section][subsectionKey]._table || [];
       const newTable = currentTable.filter((_row: any, i: number) => i !== rowIndex);
@@ -315,7 +338,7 @@ export default function CreateSolicitudPage() {
     }
   };
 
-  const renderField = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string, field: Field) => {
+  const renderField = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string, field: Field) => {
     const value = formData.sections[section][subsectionKey]?.[field.label] || '';
     const baseClasses = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent";
     
@@ -619,13 +642,13 @@ export default function CreateSolicitudPage() {
     return total;
   };
 
-  const renderSubsectionForm = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL', subsectionKey: string, subsection: Subsection) => {
+  const renderSubsectionForm = (section: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES', subsectionKey: string, subsection: Subsection) => {
     // Renderizado especial para PRESUPUESTO
     if (subsectionKey === 'PRESUPUESTO') {
       const gastosPersonalVinculado = calcularTotalGastos('GASTOS PERSONAL VINCULADO');
       const gastosPersonalInvitado = calcularTotalGastos('GASTOS PERSONAL INVITADO');
       const gastosGenerales = calcularTotalGastos('GASTOS GENERALES');
-      const gastosRecursosContratar = calcularTotalGastos('GASTOS RECURSOS A CONTRATAR');
+      const gastosRecursosContratar = calcularTotalGastos('RECURSOS A CONTRATAR');
       
       console.log('📊 RESUMEN DE GASTOS:');
       console.log('  Personal Vinculado:', gastosPersonalVinculado);
@@ -653,6 +676,79 @@ export default function CreateSolicitudPage() {
           gastosPersonalInvitado={gastosPersonalInvitado}
           gastosGenerales={gastosGenerales}
           gastosRecursosContratar={gastosRecursosContratar}
+        />
+      );
+    }
+    
+    // Renderizado especial para FONDO ROTATORIO
+    if (subsectionKey === 'FONDO ROTATORIO') {
+      // Obtener INGRESOS desde PRESUPUESTO
+      const presupuestoData = formData.sections['INFORMACIÓN PRESUPUESTAL']['PRESUPUESTO'] || {};
+      const ingresos = presupuestoData.ingresos || 0;
+      
+      return (
+        <FondoRotatorioForm
+          formData={formData.sections[section][subsectionKey] || {}}
+          onUpdate={(data) => {
+            setFormData(prev => ({
+              ...prev,
+              sections: {
+                ...prev.sections,
+                [section]: {
+                  ...prev.sections[section],
+                  [subsectionKey]: data
+                }
+              }
+            }));
+          }}
+          ingresos={ingresos}
+        />
+      );
+    }
+    
+    // Renderizado especial para PLAN DE PAGO
+    if (subsectionKey === 'PLAN DE PAGO') {
+      // Obtener Valor del Proyecto desde PRESUPUESTO
+      const presupuestoData = formData.sections['INFORMACIÓN PRESUPUESTAL']['PRESUPUESTO'] || {};
+      const valorProyecto = presupuestoData.valorProyecto || 0;
+      
+      return (
+        <PlanDePagoForm
+          formData={formData.sections[section][subsectionKey] || {}}
+          onUpdate={(data) => {
+            setFormData(prev => ({
+              ...prev,
+              sections: {
+                ...prev.sections,
+                [section]: {
+                  ...prev.sections[section],
+                  [subsectionKey]: data
+                }
+              }
+            }));
+          }}
+          valorProyecto={valorProyecto}
+        />
+      );
+    }
+    
+    // Renderizado especial para CONTRAPARTIDA
+    if (subsectionKey === 'CONTRAPARTIDA') {
+      return (
+        <ContrapartidaForm
+          formData={formData.sections[section][subsectionKey] || {}}
+          onUpdate={(data) => {
+            setFormData(prev => ({
+              ...prev,
+              sections: {
+                ...prev.sections,
+                [section]: {
+                  ...prev.sections[section],
+                  [subsectionKey]: data
+                }
+              }
+            }));
+          }}
         />
       );
     }
@@ -883,20 +979,30 @@ export default function CreateSolicitudPage() {
                           // Detectar si es la columna de "¿GASTO EJECUTADO POR FONDO ROTATORIO?"
                           const isFondoRotatorioColumn = header.toUpperCase().includes('FONDO ROTATORIO');
                           
+                          // Detectar si es columna de descripción en ANEXOS (debe ser Si/No)
+                          const isAnexosDescripcionColumn = subsectionKey === 'ANEXOS' &&
+                                                           header.toUpperCase().includes('DESCRIPCIÓN');
+                          
                           // Detectar si es columna de dinero
                           const isMoneyColumn = header.toUpperCase().includes('TOTAL') ||
                                                header.toUpperCase().includes('ASIGNACIÓN') ||
                                                header.toUpperCase().includes('REMUNERACIÓN') ||
                                                header.toUpperCase().includes('VALOR');
                           
-                          // Detectar si es columna de descripción (solo ESPECIFICACIONES usa textarea)
-                          const isDescriptionColumn = header.toUpperCase().includes('ESPECIFICACIONES');
+                          // Detectar si es columna de porcentaje
+                          const isPercentColumn = header.toUpperCase().includes('%') ||
+                                                 header.toUpperCase().includes('PORCENTAJE') ||
+                                                 header.toUpperCase().includes('PARTICIPACION') ||
+                                                 header.toUpperCase().includes('PARTICIPACIÓN');
+                          
+                          // Detectar si es columna de descripción (ninguna usa textarea ahora)
+                          const isDescriptionColumn = false;
                           
                           const inputType = isDateColumn ? 'date' : 'text';
                           
                           return (
                             <td key={colIdx} className="px-2 py-1 border-b">
-                              {isFondoRotatorioColumn && !isSubtotalRow ? (
+                              {(isFondoRotatorioColumn || isAnexosDescripcionColumn) && !isSubtotalRow ? (
                                 <select
                                   value={row[colIdx] || ''}
                                   onChange={(e) => handleTableChange(section, subsectionKey, rowIdx, colIdx, e.target.value)}
@@ -924,6 +1030,24 @@ export default function CreateSolicitudPage() {
                               ) : isMoneyColumn && isSubtotalRow ? (
                                 <div className="w-full px-2 py-1 font-bold bg-yellow-50 text-right text-sm">
                                   {row[colIdx] || '$0'}
+                                </div>
+                              ) : isPercentColumn && !isSubtotalRow ? (
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={row[colIdx] ? row[colIdx].toString().replace('%', '') : ''}
+                                    onChange={(e) => {
+                                      const numericValue = e.target.value.replace(/[^0-9.]/g, '');
+                                      handleTableChange(section, subsectionKey, rowIdx, colIdx, numericValue);
+                                    }}
+                                    className="w-full pr-8 pl-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm text-right"
+                                    placeholder="0"
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
+                                </div>
+                              ) : isPercentColumn && isSubtotalRow ? (
+                                <div className="w-full px-2 py-1 font-bold bg-yellow-50 text-right text-sm">
+                                  {row[colIdx] ? `${row[colIdx]}%` : '0%'}
                                 </div>
                               ) : isDescriptionColumn && !isSubtotalRow ? (
                                 <textarea
@@ -1120,6 +1244,17 @@ export default function CreateSolicitudPage() {
                       >
                         Ir a Información Presupuestal →
                       </button>
+                    ) : currentSection === 'INFORMACIÓN PRESUPUESTAL' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentSection('AUTORIZACIONES');
+                          setCurrentSubsection(0);
+                        }}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Ir a Autorizaciones →
+                      </button>
                     ) : (
                       <button
                         type="submit"
@@ -1193,6 +1328,30 @@ export default function CreateSolicitudPage() {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                           currentSection === 'INFORMACIÓN PRESUPUESTAL' && currentSubsection === idx
+                            ? 'bg-blue-600 text-white'
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {idx + 1}. {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AUTORIZACIONES */}
+                <div className="bg-white rounded-lg shadow-sm p-3">
+                  <h3 className="font-semibold text-gray-900 text-xs mb-2">AUTORIZACIONES</h3>
+                  <div className="space-y-0.5">
+                    {sectionNames['AUTORIZACIONES'].map((name, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setCurrentSection('AUTORIZACIONES');
+                          setCurrentSubsection(idx);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                          currentSection === 'AUTORIZACIONES' && currentSubsection === idx
                             ? 'bg-blue-600 text-white'
                             : 'hover:bg-gray-100 text-gray-700'
                         }`}

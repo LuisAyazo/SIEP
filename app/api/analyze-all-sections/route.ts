@@ -38,15 +38,26 @@ export async function GET() {
       'GASTOS PERSONAL VINCULADO',
       'GASTOS PERSONAL INVITADO',
       'GASTOS GENERALES',
-      'GASTOS RECURSOS A CONTRATAR'
+      'RECURSOS A CONTRATAR',
+      'INVERSIONES',
+      'FONDO ROTATORIO',
+      'PLAN DE PAGO',
+      'CONTRAPARTIDA',
+      'ANEXOS'
+    ];
+    
+    const autorizacionesSubsections = [
+      'AUTORIZACIONES',
+      'MODIFICACIONES'
     ];
     
     const result: Record<string, Record<string, SectionData>> = {
       'INFORMACIÓN TÉCNICA': {},
-      'INFORMACIÓN PRESUPUESTAL': {}
+      'INFORMACIÓN PRESUPUESTAL': {},
+      'AUTORIZACIONES': {}
     };
     
-    let currentMainSection: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | '' = '';
+    let currentMainSection: 'INFORMACIÓN TÉCNICA' | 'INFORMACIÓN PRESUPUESTAL' | 'AUTORIZACIONES' | '' = '';
     let currentSubsection = '';
     
     for (let i = 0; i < templateData.length; i++) {
@@ -57,7 +68,7 @@ export async function GET() {
       const cellD = row[3]?.toString().trim() || '';
       
       // Detectar sección principal
-      if (cellA === 'INFORMACIÓN TÉCNICA' || cellA === 'INFORMACIÓN PRESUPUESTAL') {
+      if (cellA === 'INFORMACIÓN TÉCNICA' || cellA === 'INFORMACIÓN PRESUPUESTAL' || cellA === 'AUTORIZACIONES') {
         currentMainSection = cellA;
         continue;
       }
@@ -73,7 +84,11 @@ export async function GET() {
       const isInfoPresupuestal = currentMainSection === 'INFORMACIÓN PRESUPUESTAL' &&
                                 infoPresupuestalSubsections.includes(cellA);
       
-      if (isInfoTecnica) {
+      // Detectar subsección de AUTORIZACIONES (patrón similar a INFORMACIÓN TÉCNICA)
+      const isAutorizaciones = currentMainSection === 'AUTORIZACIONES' &&
+                              autorizacionesSubsections.includes(cellA);
+      
+      if (isInfoTecnica || isAutorizaciones) {
         currentSubsection = cellA;
         
         result[currentMainSection][currentSubsection] = {
@@ -127,6 +142,15 @@ export async function GET() {
             break;
           }
           
+          // Filtrar filas de comentarios/ejemplos
+          const isCommentRow = dCellA.toLowerCase().includes('ejemplo:') ||
+                              dCellA.toLowerCase().includes('descripción de la contrapartida');
+          
+          if (isCommentRow) {
+            dataRowIndex++;
+            continue; // Saltar esta fila
+          }
+          
           // Detectar fila de SUBTOTAL ANTES de agregar
           const isSubtotalRow = dCellA.toUpperCase().includes('SUBTOTAL') || dCellA.toUpperCase().includes('TOTAL');
           
@@ -149,6 +173,23 @@ export async function GET() {
           }
           
           dataRowIndex++;
+        }
+        
+        // Agregar fila de TOTAL para PLAN DE PAGO si no existe
+        if (cellA === 'PLAN DE PAGO') {
+          const hasTotal = result[currentMainSection][currentSubsection].tableRows.some(
+            row => row.data[0]?.toUpperCase().includes('TOTAL')
+          );
+          
+          if (!hasTotal) {
+            // Agregar fila de TOTAL con columnas vacías
+            const totalRow = new Array(headers.length).fill('');
+            totalRow[0] = 'TOTAL';
+            result[currentMainSection][currentSubsection].tableRows.push({
+              row: -1, // Fila generada
+              data: totalRow
+            });
+          }
         }
         
         // Saltar TODAS las filas hasta la siguiente subsección conocida
@@ -241,7 +282,8 @@ export async function GET() {
       sections: result,
       sectionNames: {
         'INFORMACIÓN TÉCNICA': infoTecnicaSubsections,
-        'INFORMACIÓN PRESUPUESTAL': infoPresupuestalSubsections
+        'INFORMACIÓN PRESUPUESTAL': infoPresupuestalSubsections,
+        'AUTORIZACIONES': autorizacionesSubsections
       }
     });
     
