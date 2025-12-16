@@ -146,12 +146,13 @@ export default function EditUserPage() {
 
       if (profileError) throw profileError;
 
-      // Actualizar rol
+      // ELIMINAR TODOS los roles anteriores
       await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
+      // INSERTAR SOLO el nuevo rol (SIEMPRE debe ser 1)
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role_id: formData.role });

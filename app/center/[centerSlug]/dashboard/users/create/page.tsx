@@ -169,7 +169,7 @@ export default function CreateUserPage() {
       
       const newUserId = authData.user.id;
       
-      // Asignar rol al usuario
+      // Asignar rol al usuario (SIEMPRE debe ser exactamente 1 rol)
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({

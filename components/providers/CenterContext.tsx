@@ -99,7 +99,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { session, loading: authLoading } = useSupabaseSession();
   const status = authLoading ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [currentCenter, setCurrentCenter] = useState<Center | null>(null);
-  const [availableCenters, setAvailableCenters] = useState<Center[]>(AVAILABLE_CENTERS);
+  const [availableCenters, setAvailableCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -115,10 +115,21 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     async function loadCenters() {
       console.log('🔄 Cargando centros desde Supabase...');
       
-      // Si no hay sesión, usar los centros por defecto
+      // Si no hay sesión, usar los centros por defecto como fallback
       if (!session?.user?.id) {
-        console.log('⚠️ No hay sesión de usuario, usando centros por defecto');
+        console.log('⚠️ No hay sesión de usuario, usando centros por defecto como fallback');
+        setAvailableCenters(AVAILABLE_CENTERS);
         return;
+      }
+
+      // 🔥 Limpiar localStorage al cargar centros para forzar recarga
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('selectedCenter');
+          console.log('🗑️ localStorage limpiado para forzar recarga de centros');
+        }
+      } catch (error) {
+        console.error('Error limpiando localStorage:', error);
       }
 
       try {
@@ -171,11 +182,14 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           console.log('📋 Centros del usuario:', formattedCenters.map(c => c.name));
           setAvailableCenters(formattedCenters);
         } else {
-          console.warn('⚠️ Usuario no tiene centros asignados');
-          // Mantener los centros por defecto si no hay asignaciones
+          console.warn('⚠️ Usuario no tiene centros asignados, usando centros por defecto');
+          // Si el usuario no tiene centros asignados, usar los centros por defecto
+          setAvailableCenters(AVAILABLE_CENTERS);
         }
       } catch (err) {
         console.error('❌ Error cargando centros del usuario:', err);
+        // En caso de error, usar los centros por defecto como fallback
+        setAvailableCenters(AVAILABLE_CENTERS);
       }
     }
 
@@ -236,6 +250,13 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Solo ejecutar una vez al montar el componente
     if (defaultCenterForcedRef.current) return;
     
+    // 🔥 NO establecer centro hasta que se hayan cargado los centros del usuario
+    // Si availableCenters está vacío, significa que aún no se han cargado desde Supabase
+    if (availableCenters.length === 0) {
+      console.log("⏳ Esperando a que se carguen los centros del usuario desde Supabase...");
+      return;
+    }
+    
     console.log("Forzando inicialización de centro por defecto en primer mount...");
     const defaultCenter = getDefaultCenter();
     
@@ -255,7 +276,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isInitialized.current = true;
       setLoading(false);
     }
-  }, [getDefaultCenter, currentCenter]);
+  }, [getDefaultCenter, currentCenter, availableCenters]);
 
   // Inicializar centros cuando cambia el estado de autenticación
   useEffect(() => {
