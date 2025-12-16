@@ -294,7 +294,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
   const currentConvenios = CONVENIOS_DATA.slice(conveniosStartIndex, conveniosEndIndex);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-8 py-4">
         <div className="flex justify-between items-center">
@@ -735,8 +735,12 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 text-sm text-center">
-                1 - 20 / 112
+              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+                <span>1 - 20 / 112</span>
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">›</button>
+                </div>
               </div>
             </div>
 
@@ -771,13 +775,17 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 text-sm text-center">
-                1 - 20 / 46
+              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+                <span>1 - 20 / 46</span>
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">›</button>
+                </div>
               </div>
             </div>
 
             {/* COORDINADOR Table */}
-            <div className="col-span-3 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#14b8a6] text-white px-4 py-3 font-bold flex justify-between">
                 <span>COORDINADOR</span>
                 <span>Rec...</span>
@@ -808,13 +816,17 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 text-sm text-center">
-                1 - 20 / 83
+              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+                <span>1 - 20 / 83</span>
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">›</button>
+                </div>
               </div>
             </div>
 
             {/* SUPERVISORES Table */}
-            <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#581c87] text-white px-4 py-3 font-bold">
                 SUPERVISORES
               </div>
@@ -830,8 +842,12 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 text-sm text-center">
-                1 - 20 / 23
+              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+                <span>1 - 20 / 23</span>
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
+                  <button className="px-2 py-1 hover:bg-gray-200 rounded">›</button>
+                </div>
               </div>
             </div>
           </div>
@@ -841,7 +857,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             <div className="bg-[#f59e0b] text-white px-4 py-3 font-bold">
               NOMBRE CONVENIO/ OBJETO
             </div>
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[500px] overflow-y-auto">
               <table className="w-full">
                 <tbody>
                   {currentConvenios.map((convenio, index) => (
@@ -879,44 +895,44 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           {/* ESTADO INDIVIDUAL and DURACIÓN Section */}
           <div className="grid grid-cols-2 gap-6 mb-8">
             {/* ESTADO INDIVIDUAL */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="text-center font-bold text-gray-800 mb-4">ESTADO INDIVIDUAL</h3>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">ESTADO INDIVIDUAL</h3>
               <div className="flex justify-center">
-                <button className="bg-purple-900 text-white px-8 py-3 rounded-lg font-bold hover:bg-purple-800 transition-colors">
+                <div className="bg-purple-900 text-white px-12 py-4 rounded-lg font-bold text-xl w-full text-center border-2 border-purple-900">
                   LIQUIDADO
-                </button>
+                </div>
               </div>
             </div>
 
             {/* DURACIÓN */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="text-center font-bold text-gray-800 mb-4">DURACIÓN</h3>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">DURACIÓN</h3>
               <div className="flex justify-center">
-                <button className="bg-[#f59e0b] text-white px-8 py-3 rounded-lg font-bold hover:bg-amber-600 transition-colors">
+                <div className="bg-[#f59e0b] text-white px-12 py-4 rounded-lg font-bold text-xl w-full text-center border-2 border-[#f59e0b]">
                   3 MESES
-                </button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Footer Images */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex justify-center">
+          <div className="grid grid-cols-2 gap-0 -mx-8 -mb-6">
+            <div className="flex justify-start items-end">
               <Image 
                 src="/images/footer-izq.png" 
                 alt="Footer Izquierdo"
-                width={400}
-                height={100}
-                className="object-contain"
+                width={700}
+                height={192}
+                className="object-cover w-auto"
               />
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-end items-end">
               <Image 
                 src="/images/footer-der.png" 
                 alt="Footer Derecho"
-                width={400}
-                height={100}
-                className="object-contain"
+                width={355}
+                height={98}
+                className="object-cover w-auto"
               />
             </div>
           </div>

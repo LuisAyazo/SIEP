@@ -65,6 +65,7 @@ export default function DashboardLayout({
   // Add state for tracking expanded subitems
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Obtener el rol desde la base de datos
   useEffect(() => {
@@ -637,12 +638,31 @@ export default function DashboardLayout({
 
       <div className="flex flex-grow">
         {/* Sidebar */}
-        <div className="bg-white dark:bg-gray-800 w-64 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 transition-all duration-300 relative ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+          {/* Toggle button - centrado en el borde derecho */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-10 p-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-md"
+            title={sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className={`w-4 h-4 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+            </svg>
+          </button>
           <nav className="flex flex-col h-full overflow-y-auto py-4 px-3">
             {/* Center Selector - Añadido aquí */}
-            <div className="mb-4 px-1">
-              <CenterSelector />
-            </div>
+            {!sidebarCollapsed && (
+              <div className="mb-4 px-1">
+                <CenterSelector />
+              </div>
+            )}
 
             {/* Navigation sections */}
             {Object.entries(filteredNavigationSections).map(([key, section]) => {
@@ -651,12 +671,13 @@ export default function DashboardLayout({
                   <div
                     className="flex items-center justify-between px-2 py-2 text-gray-600 dark:text-gray-300 rounded-md cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-800/20"
                     onClick={() => toggleSection(key)}
+                    title={sidebarCollapsed ? section.name : ''}
                   >
                     <div className="flex items-center">
-                      <span className="mr-2">{section.icon}</span>
-                      <span className="font-medium">{section.name}</span>
+                      <span className={sidebarCollapsed ? '' : 'mr-2'}>{section.icon}</span>
+                      {!sidebarCollapsed && <span className="font-medium">{section.name}</span>}
                     </div>
-                    <svg
+                    {!sidebarCollapsed && <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className={`h-4 w-4 transition-transform ${
                         expandedSections[key]
@@ -673,11 +694,11 @@ export default function DashboardLayout({
                         strokeWidth="2"
                         d="M19 9l-7 7-7-7"
                       />
-                    </svg>
+                    </svg>}
                   </div>
 
                   {/* Section items */}
-                  {expandedSections[key] && (
+                  {expandedSections[key] && !sidebarCollapsed && (
                     <div className="mt-1 pl-8 space-y-1">
                       {section.items.map((item: NavItem, index: number) => {
                         if (!item.adminOnly || hasAdminAccess()) {

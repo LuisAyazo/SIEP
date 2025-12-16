@@ -33,7 +33,13 @@ export async function GET() {
       'CRONOGRAMA'
     ];
     
-    const infoPresupuestalSubsections: string[] = []; // Se detectarán dinámicamente
+    const infoPresupuestalSubsections = [
+      'PRESUPUESTO',
+      'GASTOS PERSONAL VINCULADO',
+      'GASTOS PERSONAL INVITADO',
+      'GASTOS GENERALES',
+      'GASTOS RECURSOS A CONTRATAR'
+    ];
     
     const result: Record<string, Record<string, SectionData>> = {
       'INFORMACIÓN TÉCNICA': {},
@@ -58,23 +64,17 @@ export async function GET() {
       
       if (!currentMainSection) continue;
       
-      // Detectar subsección
-      const isInfoTecnica = currentMainSection === 'INFORMACIÓN TÉCNICA' && 
-                           infoTecnicaSubsections.includes(cellA) && 
+      // Detectar subsección de INFORMACIÓN TÉCNICA (patrón: NOMBRE | DESCRIPCIÓN | vacío)
+      const isInfoTecnica = currentMainSection === 'INFORMACIÓN TÉCNICA' &&
+                           infoTecnicaSubsections.includes(cellA) &&
                            cellB === 'DESCRIPCIÓN';
       
-      const isInfoPresupuestal = currentMainSection === 'INFORMACIÓN PRESUPUESTAL' && 
-                                cellA && 
-                                cellB === 'DESCRIPCIÓN' && 
-                                !cellC;
+      // Detectar subsección de INFORMACIÓN PRESUPUESTAL (patrón: headers en primera fila)
+      const isInfoPresupuestal = currentMainSection === 'INFORMACIÓN PRESUPUESTAL' &&
+                                infoPresupuestalSubsections.includes(cellA);
       
-      if (isInfoTecnica || isInfoPresupuestal) {
+      if (isInfoTecnica) {
         currentSubsection = cellA;
-        
-        // Agregar a la lista de subsecciones presupuestales si es nueva
-        if (isInfoPresupuestal && !infoPresupuestalSubsections.includes(cellA)) {
-          infoPresupuestalSubsections.push(cellA);
-        }
         
         result[currentMainSection][currentSubsection] = {
           name: cellA,
@@ -84,6 +84,88 @@ export async function GET() {
           tableHeaders: [],
           tableRows: []
         };
+        continue;
+      }
+      
+      if (isInfoPresupuestal) {
+        currentSubsection = cellA;
+        
+        // Para INFORMACIÓN PRESUPUESTAL, la primera fila ES el header de la tabla
+        const headers = [];
+        for (let col = 0; col < 20; col++) {
+          const headerValue = row[col]?.toString().trim() || '';
+          if (headerValue) {
+            headers.push(headerValue);
+          }
+        }
+        
+        result[currentMainSection][currentSubsection] = {
+          name: cellA,
+          startRow: i + 1,
+          fields: [],
+          hasTable: true,
+          tableHeaders: headers,
+          tableRows: []
+        };
+        
+        // Recopilar filas de datos
+        let dataRowIndex = i + 1;
+        
+        while (dataRowIndex < templateData.length) {
+          const dataRow = templateData[dataRowIndex];
+          const dCellA = dataRow[0]?.toString().trim() || '';
+          const dCellB = dataRow[1]?.toString().trim() || '';
+          
+          // Parar si encontramos otra subsección conocida
+          if (infoPresupuestalSubsections.includes(dCellA)) {
+            break;
+          }
+          
+          // Parar si encontramos fila vacía
+          const isEmptyRow = !dCellA && !dCellB && !dataRow[2]?.toString().trim();
+          if (isEmptyRow) {
+            break;
+          }
+          
+          // Detectar fila de SUBTOTAL ANTES de agregar
+          const isSubtotalRow = dCellA.toUpperCase().includes('SUBTOTAL') || dCellA.toUpperCase().includes('TOTAL');
+          
+          // Agregar fila de datos (incluyendo SUBTOTAL)
+          if (dCellA || dCellB) {
+            const rowData = [];
+            for (let col = 0; col < headers.length; col++) {
+              rowData.push(dataRow[col]?.toString().trim() || '');
+            }
+            result[currentMainSection][currentSubsection].tableRows.push({
+              row: dataRowIndex + 1,
+              data: rowData
+            });
+            
+            // Si es SUBTOTAL, parar INMEDIATAMENTE después de agregarlo
+            if (isSubtotalRow) {
+              dataRowIndex++; // Avanzar una posición más
+              break;
+            }
+          }
+          
+          dataRowIndex++;
+        }
+        
+        // Saltar TODAS las filas hasta la siguiente subsección conocida
+        // para evitar que se procesen como fields
+        while (dataRowIndex < templateData.length) {
+          const skipRow = templateData[dataRowIndex];
+          const skipCellA = skipRow[0]?.toString().trim() || '';
+          
+          // Parar si encontramos otra subsección conocida
+          if (infoPresupuestalSubsections.includes(skipCellA)) {
+            break;
+          }
+          
+          dataRowIndex++;
+        }
+        
+        i = dataRowIndex - 1;
         continue;
       }
       
