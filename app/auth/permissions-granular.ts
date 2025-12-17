@@ -81,6 +81,13 @@ export const GRANULAR_PERMISSIONS = {
   // Historial
   HISTORY_READ: 'history.read',
   HISTORY_VIEW_ALL: 'history.view_all',
+  
+  // Grupos de Usuarios
+  GROUPS_CREATE: 'groups.create',
+  GROUPS_READ: 'groups.read',
+  GROUPS_UPDATE: 'groups.update',
+  GROUPS_DELETE: 'groups.delete',
+  GROUPS_MANAGE_MEMBERS: 'groups.manage_members',
 } as const;
 
 // Tipo para los permisos
@@ -147,6 +154,13 @@ export const ROLE_PERMISSIONS: Record<string, GranularPermission[]> = {
     
     // Historial
     GRANULAR_PERMISSIONS.HISTORY_READ,
+    
+    // Grupos
+    GRANULAR_PERMISSIONS.GROUPS_CREATE,
+    GRANULAR_PERMISSIONS.GROUPS_READ,
+    GRANULAR_PERMISSIONS.GROUPS_UPDATE,
+    GRANULAR_PERMISSIONS.GROUPS_DELETE,
+    GRANULAR_PERMISSIONS.GROUPS_MANAGE_MEMBERS,
   ],
   
   // Funcionario - Permisos limitados

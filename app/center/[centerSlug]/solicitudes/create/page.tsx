@@ -329,7 +329,7 @@ export default function CreateSolicitudPage() {
     try {
       console.log('Datos a guardar:', formData);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push(`/center/${centerSlug}/solicitudes`);
+      router.push(`/center/${centerSlug}/dashboard/solicitudes`);
     } catch (error) {
       console.error('Error al crear solicitud:', error);
       alert('Error al crear la solicitud');

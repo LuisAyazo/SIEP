@@ -78,8 +78,8 @@ stateDiagram-v2
 
 ### 1. Diplomado - Proyección Social (Gratis)
 
-**Documentos Requeridos:**
-- [ ] Formato 003 (generado automáticamente)
+**Documentos Requeridos (adjuntados por funcionario):**
+- [ ] Formato 003 (adjuntado por funcionario)
 - [ ] Acta de Comité (adjuntada por comité al aprobar)
 - [ ] Resolución (generada automáticamente al aprobar)
 
@@ -91,8 +91,8 @@ stateDiagram-v2
 ### 2. Diplomado - Extensión
 
 **Documentos Requeridos:**
-- [ ] Ficha Técnica (Excel - generado automáticamente)
-- [ ] Formato 003 (generado automáticamente)
+- [ ] Ficha Técnica (Excel - generado automáticamente desde formulario)
+- [ ] Formato 003 (adjuntado por funcionario)
 - [ ] Acta de Comité (adjuntada por comité al aprobar)
 - [ ] Resolución (generada automáticamente al aprobar)
 
@@ -104,8 +104,8 @@ stateDiagram-v2
 ### 3. Contrato
 
 **Documentos Requeridos:**
-- [ ] Ficha Técnica (Excel - generado automáticamente)
-- [ ] Formato 003 (generado automáticamente)
+- [ ] Ficha Técnica (Excel - generado automáticamente desde formulario)
+- [ ] Formato 003 (adjuntado por funcionario)
 - [ ] Contrato (adjuntado por funcionario)
 - [ ] Acta de Comité (adjuntada por comité al aprobar)
 - [ ] Resolución (generada automáticamente al aprobar)
@@ -118,8 +118,8 @@ stateDiagram-v2
 ### 4. Convenio
 
 **Documentos Requeridos:**
-- [ ] Ficha Técnica (Excel - generado automáticamente)
-- [ ] Formato 003 (generado automáticamente)
+- [ ] Ficha Técnica (Excel - generado automáticamente desde formulario)
+- [ ] Formato 003 (adjuntado por funcionario)
 - [ ] Convenio (adjuntado por funcionario)
 - [ ] Acta de Comité (adjuntada por comité al aprobar)
 - [ ] Resolución (generada automáticamente al aprobar)
@@ -139,11 +139,13 @@ stateDiagram-v2
 
 **Acciones:**
 1. Funcionario completa formulario de solicitud
-2. Sistema extrae nombre del proyecto de la Ficha Técnica (Fila #10)
-3. Sistema genera automáticamente:
-   - Ficha Técnica (Excel) - si aplica
-   - Formato 003
-4. Funcionario adjunta documentos requeridos según tipo
+2. Sistema genera automáticamente:
+   - Ficha Técnica (Excel) - si aplica según tipo de solicitud
+3. Sistema extrae nombre del proyecto de la Ficha Técnica (Fila #10)
+4. Funcionario adjunta documentos requeridos según tipo:
+   - Formato 003 (obligatorio)
+   - Contrato/Convenio (si aplica)
+   - Documentos opcionales
 5. Sistema crea directorio en Gestor Documental: `/proyectos/{nombre_proyecto}/`
 6. Sistema almacena documentos en el directorio
 
@@ -441,11 +443,11 @@ CREATE TABLE IF NOT EXISTS public.solicitud_historial (
 - [ ] Crear triggers para auditoría automática
 - [ ] Crear función para validar transiciones de estado
 
-### Fase 2: Backend - Validaciones
+### Fase 2: Backend - Validaciones y Generación
 - [ ] Crear función para validar documentos requeridos según tipo
 - [ ] Crear función para validar transiciones de estado
+- [ ] Crear función para generar Ficha Técnica (Excel) desde formulario
 - [ ] Crear función para extraer nombre de proyecto de Excel (fila #10)
-- [ ] Crear función para generar Formato 003
 - [ ] Crear función para generar Resolución (Word/PDF)
 - [ ] Implementar almacenamiento en Supabase Storage
 
@@ -493,11 +495,12 @@ CREATE TABLE IF NOT EXISTS public.solicitud_historial (
 - [ ] Crear dashboard de notificaciones pendientes
 
 ### Fase 8: Generación de Documentos
-- [ ] Implementar generación de Formato 003 (PDF)
+- [ ] Implementar generación de Ficha Técnica (Excel) desde formulario
 - [ ] Implementar generación de Resolución (Word/PDF)
-- [ ] Crear plantillas editables
-- [ ] Implementar extracción de datos de Excel (fila #10)
+- [ ] Crear plantillas editables para Resolución
+- [ ] Implementar extracción de datos de Excel (fila #10 para nombre proyecto)
 - [ ] Validar formato de Ficha Técnica
+- [ ] Validar formato de Formato 003 adjuntado
 
 ### Fase 9: Testing
 - [ ] Probar flujo completo: Funcionario → Director → Comité → Aprobado
