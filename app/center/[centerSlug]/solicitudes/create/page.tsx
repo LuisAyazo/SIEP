@@ -7,6 +7,11 @@ import PresupuestoForm from '@/components/PresupuestoForm';
 import FondoRotatorioForm from '@/components/FondoRotatorioForm';
 import PlanDePagoForm from '@/components/PlanDePagoForm';
 import ContrapartidaForm from '@/components/ContrapartidaForm';
+import TipoSolicitudSelector, { TipoSolicitud } from '@/components/solicitudes/TipoSolicitudSelector';
+import DocumentosUploader, { getDocumentosRequeridos } from '@/components/solicitudes/DocumentosUploader';
+import ConfirmacionSolicitud from '@/components/solicitudes/ConfirmacionSolicitud';
+import MetodoFichaTecnicaSelector from '@/components/solicitudes/MetodoFichaTecnicaSelector';
+import ExcelDataViewer from '@/components/solicitudes/ExcelDataViewer';
 
 interface Field {
   row: number;
@@ -41,9 +46,15 @@ export default function CreateSolicitudPage() {
   const params = useParams();
   const centerSlug = params.centerSlug as string;
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Empezar en 0 para tipo de solicitud
   const [loading, setLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
+  const [tipoSolicitud, setTipoSolicitud] = useState<TipoSolicitud | null>(null);
+  const [documentosAdjuntos, setDocumentosAdjuntos] = useState<Record<string, File | null>>({});
+  const [metodoFichaTecnica, setMetodoFichaTecnica] = useState<'importar' | 'formulario' | null>(null);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [excelValidating, setExcelValidating] = useState(false);
+  const [excelValidationResult, setExcelValidationResult] = useState<any>(null);
   const [sectionsData, setSectionsData] = useState<SectionsData>({
     'INFORMACIÓN TÉCNICA': {},
     'INFORMACIÓN PRESUPUESTAL': {},
@@ -322,14 +333,77 @@ export default function CreateSolicitudPage() {
     });
   };
 
+  // Determinar si debe mostrar el paso de ficha técnica
+  const shouldShowFichaTecnica = tipoSolicitud !== 'diplomado_proyeccion_social';
+
+  const handleFileChange = (documentoNombre: string, file: File | null) => {
+    setDocumentosAdjuntos(prev => ({
+      ...prev,
+      [documentoNombre]: file
+    }));
+  };
+
+  const validateDocumentos = (): boolean => {
+    if (!tipoSolicitud) return false;
+    
+    const documentosRequeridos = getDocumentosRequeridos(tipoSolicitud);
+    const faltantes = documentosRequeridos
+      .filter(doc => doc.requerido && !documentosAdjuntos[doc.nombre])
+      .map(doc => doc.descripcion);
+    
+    if (faltantes.length > 0) {
+      alert(`Faltan documentos requeridos:\n${faltantes.join('\n')}`);
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleNext = () => {
+    // Validaciones por paso
+    if (step === 0 && !tipoSolicitud) {
+      alert('Por favor seleccione un tipo de solicitud');
+      return;
+    }
+    
+    if (step === 1 && !formData.titulo.trim()) {
+      alert('Por favor ingrese un título para la solicitud');
+      return;
+    }
+    
+    if (step === 2 && !validateDocumentos()) {
+      return;
+    }
+    
+    // Si es Proyección Social y estamos en paso 2, saltar al paso 4 (confirmación)
+    if (step === 2 && !shouldShowFichaTecnica) {
+      setStep(4);
+    } else {
+      setStep(step + 1);
+    }
+  };
+
+  const handleBack = () => {
+    // Si estamos en paso 4 y es Proyección Social, volver al paso 2
+    if (step === 4 && !shouldShowFichaTecnica) {
+      setStep(2);
+    } else {
+      setStep(step - 1);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Datos a guardar:', formData);
+      console.log('Datos a guardar:', {
+        tipoSolicitud,
+        formData,
+        documentosAdjuntos
+      });
       await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push(`/center/${centerSlug}/dashboard/solicitudes`);
+      router.push(`/center/${centerSlug}/solicitudes`);
     } catch (error) {
       console.error('Error al crear solicitud:', error);
       alert('Error al crear la solicitud');
@@ -1124,24 +1198,56 @@ export default function CreateSolicitudPage() {
           <p className="text-gray-600 mt-2">Complete el formulario para crear una nueva solicitud</p>
         </div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-8 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-max">
+            <div className={`flex-1 ${step >= 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 0 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>0</div>
+                <span className="ml-2 font-medium text-sm">Tipo</span>
+              </div>
+            </div>
             <div className={`flex-1 ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>1</div>
-                <span className="ml-2 font-medium">Información</span>
+                <span className="ml-2 font-medium text-sm">Info Básica</span>
               </div>
             </div>
             <div className={`flex-1 ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>2</div>
-                <span className="ml-2 font-medium">Ficha Técnica</span>
+                <span className="ml-2 font-medium text-sm">Documentos</span>
+              </div>
+            </div>
+            {shouldShowFichaTecnica && (
+              <div className={`flex-1 ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className="flex items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>3</div>
+                  <span className="ml-2 font-medium text-sm">Ficha Técnica</span>
+                </div>
+              </div>
+            )}
+            <div className={`flex-1 ${step >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>4</div>
+                <span className="ml-2 font-medium text-sm">Confirmar</span>
               </div>
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* PASO 0: Tipo de Solicitud */}
+          {step === 0 && (
+            <TipoSolicitudSelector
+              value={tipoSolicitud}
+              onChange={(tipo) => {
+                setTipoSolicitud(tipo);
+                setStep(1);
+              }}
+            />
+          )}
+
+          {/* PASO 1: Información Básica */}
           {step === 1 && (
             <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
               <div>
@@ -1179,10 +1285,17 @@ export default function CreateSolicitudPage() {
                 </select>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-between">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={handleBack}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ← Atrás
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Siguiente →
@@ -1191,7 +1304,265 @@ export default function CreateSolicitudPage() {
             </div>
           )}
 
-          {step === 2 && (
+          {/* PASO 2: Adjuntar Documentos */}
+          {step === 2 && tipoSolicitud && (
+            <>
+              <DocumentosUploader
+                tipoSolicitud={tipoSolicitud}
+                documentosAdjuntos={documentosAdjuntos}
+                onFileChange={handleFileChange}
+              />
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ← Atrás
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {shouldShowFichaTecnica ? 'Siguiente →' : 'Ir a Confirmación →'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* PASO 3: Seleccionar Método de Ficha Técnica (SOLO si NO es Proyección Social) */}
+          {step === 3 && shouldShowFichaTecnica && !metodoFichaTecnica && (
+            <>
+              <MetodoFichaTecnicaSelector
+                onSelectMetodo={(metodo) => {
+                  setMetodoFichaTecnica(metodo);
+                }}
+              />
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ← Atrás a Documentos
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* PASO 3b: Importar Excel (si seleccionó importar) */}
+          {step === 3 && shouldShowFichaTecnica && metodoFichaTecnica === 'importar' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  📤 Importar Ficha Técnica desde Excel
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Sube el archivo Excel con la ficha técnica completa. El sistema validará que contenga todas las secciones requeridas.
+                </p>
+                
+                {!excelFile && (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setExcelFile(file);
+                          setExcelValidating(true);
+                          setExcelValidationResult(null);
+                          
+                          try {
+                            // Validar archivo
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            
+                            const response = await fetch('/api/validate-excel', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            
+                            const result = await response.json();
+                            setExcelValidationResult(result);
+                            
+                            // Si es válido, poblar el formulario con los datos
+                            if (result.valid && result.data) {
+                              // TODO: Poblar formData con result.data
+                              console.log('Datos extraídos:', result.data);
+                            }
+                          } catch (error) {
+                            console.error('Error validando Excel:', error);
+                            setExcelValidationResult({
+                              valid: false,
+                              errors: [{ message: 'Error al validar el archivo' }],
+                              warnings: [],
+                            });
+                          } finally {
+                            setExcelValidating(false);
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="excel-upload"
+                    />
+                    <label
+                      htmlFor="excel-upload"
+                      className="cursor-pointer inline-flex flex-col items-center"
+                    >
+                      <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-700">
+                        Haz clic para seleccionar archivo Excel
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        Formatos aceptados: .xlsx, .xls
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Loading state */}
+                {excelValidating && (
+                  <div className="border-2 border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-sm font-medium text-blue-900">Validando archivo Excel...</p>
+                    <p className="text-xs text-blue-700 mt-1">Esto puede tomar unos segundos</p>
+                  </div>
+                )}
+
+                {/* Archivo cargado */}
+                {excelFile && !excelValidating && (
+                  <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-green-900">{excelFile.name}</p>
+                          <p className="text-xs text-green-700">{(excelFile.size / 1024).toFixed(2)} KB</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExcelFile(null);
+                          setExcelValidationResult(null);
+                        }}
+                        className="px-3 py-1 text-sm text-red-600 hover:bg-red-100 rounded transition-colors"
+                      >
+                        Cambiar archivo
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Resultados de validación */}
+                {excelValidationResult && (
+                  <div className="mt-4 space-y-3">
+                    {/* Estado general */}
+                    {excelValidationResult.valid ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <p className="text-sm font-semibold text-green-900">✅ Validación exitosa</p>
+                        </div>
+                        <p className="text-xs text-green-700 mt-1">
+                          El archivo contiene toda la información requerida
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <p className="text-sm font-semibold text-red-900">❌ Validación fallida</p>
+                        </div>
+                        <p className="text-xs text-red-700 mt-1">
+                          Se encontraron {excelValidationResult.errors?.length || 0} errores
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Errores */}
+                    {excelValidationResult.errors && excelValidationResult.errors.length > 0 && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm font-semibold text-red-900 mb-2">Errores encontrados:</p>
+                        <ul className="space-y-1 max-h-40 overflow-y-auto">
+                          {excelValidationResult.errors.map((error: any, idx: number) => (
+                            <li key={idx} className="text-xs text-red-800">
+                              • <strong>Fila {error.row}</strong> - {error.field}: {error.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Advertencias */}
+                    {excelValidationResult.warnings && excelValidationResult.warnings.length > 0 && (
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm font-semibold text-yellow-900 mb-2">Advertencias:</p>
+                        <ul className="space-y-1 max-h-40 overflow-y-auto">
+                          {excelValidationResult.warnings.map((warning: any, idx: number) => (
+                            <li key={idx} className="text-xs text-yellow-800">
+                              • <strong>Fila {warning.row}</strong> - {warning.field}: {warning.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Vista previa de datos extraídos */}
+                    {excelValidationResult.valid && excelValidationResult.data && excelValidationResult.structure && (
+                      <div className="mt-6">
+                        <ExcelDataViewer
+                          data={excelValidationResult.data}
+                          structure={excelValidationResult.structure}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Nota:</strong> El archivo debe contener todas las secciones requeridas: Generalidades, Presupuesto, Autorizaciones, etc.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetodoFichaTecnica(null);
+                    setExcelFile(null);
+                    setExcelValidationResult(null);
+                  }}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ← Cambiar Método
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  disabled={!excelValidationResult?.valid}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continuar a Confirmación →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 3c: Formulario de Ficha Técnica (si seleccionó formulario) */}
+          {step === 3 && shouldShowFichaTecnica && metodoFichaTecnica === 'formulario' && (
             <div className="flex gap-6 relative">
               {/* Contenido principal */}
               <div className={`space-y-6 transition-all duration-300 ${rightMenuCollapsed ? 'flex-1' : 'flex-1'}`}>
@@ -1207,10 +1578,12 @@ export default function CreateSolicitudPage() {
                   <div className="space-x-2">
                     <button
                       type="button"
-                      onClick={() => setStep(1)}
+                      onClick={() => {
+                        setMetodoFichaTecnica(null);
+                      }}
                       className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
-                      ← Atrás
+                      ← Cambiar Método
                     </button>
                     
                     {currentSubsection > 0 && (
@@ -1219,7 +1592,7 @@ export default function CreateSolicitudPage() {
                         onClick={() => setCurrentSubsection(currentSubsection - 1)}
                         className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                       >
-                        ← Anterior
+                        ← Anterior Subsección
                       </button>
                     )}
                   </div>
@@ -1257,11 +1630,11 @@ export default function CreateSolicitudPage() {
                       </button>
                     ) : (
                       <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                        type="button"
+                        onClick={() => setStep(4)}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        {loading ? 'Guardando...' : '✓ Crear Solicitud'}
+                        Ir a Confirmación →
                       </button>
                     )}
                   </div>
@@ -1364,6 +1737,38 @@ export default function CreateSolicitudPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* PASO 4: Confirmación */}
+          {step === 4 && tipoSolicitud && (
+            <>
+              <ConfirmacionSolicitud
+                tipoSolicitud={tipoSolicitud}
+                titulo={formData.titulo}
+                descripcion={formData.descripcion}
+                prioridad={formData.prioridad}
+                documentosAdjuntos={documentosAdjuntos}
+                metodoFichaTecnica={metodoFichaTecnica}
+                excelFile={excelFile}
+                excelValidationResult={excelValidationResult}
+              />
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ← Atrás
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Guardando...' : '✓ Crear Solicitud'}
+                </button>
+              </div>
+            </>
           )}
         </form>
       </div>
