@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import { useCenterContext } from '@/components/providers/CenterContext';
 import PresupuestoForm from '@/components/PresupuestoForm';
 import FondoRotatorioForm from '@/components/FondoRotatorioForm';
 import PlanDePagoForm from '@/components/PlanDePagoForm';
@@ -45,6 +46,7 @@ export default function CreateSolicitudPage() {
   const router = useRouter();
   const params = useParams();
   const centerSlug = params.centerSlug as string;
+  const { currentCenter } = useCenterContext();
 
   const [step, setStep] = useState(0); // Empezar en 0 para tipo de solicitud
   const [loading, setLoading] = useState(false);
@@ -394,19 +396,65 @@ export default function CreateSolicitudPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar que tengamos un centro seleccionado
+    if (!currentCenter) {
+      alert('❌ Error: No se ha seleccionado un centro');
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      console.log('Datos a guardar:', {
-        tipoSolicitud,
-        formData,
-        documentosAdjuntos
+      // Crear FormData para enviar archivos
+      const submitData = new FormData();
+      
+      // Agregar datos básicos
+      if (tipoSolicitud) {
+        submitData.append('tipo_solicitud', tipoSolicitud);
+      }
+      
+      // Usar el center_id del contexto
+      submitData.append('center_id', currentCenter.id);
+      
+      // Agregar método de ficha técnica
+      if (metodoFichaTecnica) {
+        submitData.append('metodo_ficha_tecnica', metodoFichaTecnica);
+      }
+      
+      // Si importó Excel, agregar archivo y datos validados
+      if (excelFile && excelValidationResult?.valid) {
+        submitData.append('excel_file', excelFile);
+        submitData.append('excel_data', JSON.stringify(excelValidationResult.data));
+      }
+      
+      // Agregar documentos adjuntos
+      Object.entries(documentosAdjuntos).forEach(([key, file]) => {
+        if (file) {
+          submitData.append(key, file);
+        }
       });
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Enviar a la API
+      const response = await fetch('/api/solicitudes', {
+        method: 'POST',
+        body: submitData,
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear solicitud');
+      }
+      
+      // Mostrar mensaje de éxito
+      alert('✅ Solicitud creada exitosamente');
+      
+      // Redireccionar a la lista de solicitudes
       router.push(`/center/${centerSlug}/solicitudes`);
     } catch (error) {
       console.error('Error al crear solicitud:', error);
-      alert('Error al crear la solicitud');
+      alert(`❌ Error al crear la solicitud: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }

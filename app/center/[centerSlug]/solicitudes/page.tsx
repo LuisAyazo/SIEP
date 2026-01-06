@@ -2,29 +2,28 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Plus, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useCenterContext } from '@/components/providers/CenterContext';
+import EstadoBadge, { EstadoSolicitud } from '@/components/solicitudes/EstadoBadge';
+import { Plus, Search, Filter, FileText } from 'lucide-react';
 
 interface Solicitud {
   id: string;
-  request_number: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  request_type: string;
+  tipo: string;
+  metodo_ficha_tecnica: string;
+  estado: EstadoSolicitud;
+  observaciones?: string;
   created_at: string;
-  updated_at: string;
-  created_by_user: {
-    id: string;
+  funcionario: {
     email: string;
-    full_name: string;
+    raw_user_meta_data?: {
+      full_name?: string;
+    };
   };
-  center: {
-    id: string;
-    name: string;
-    slug: string;
+  director?: {
+    email: string;
+    raw_user_meta_data?: {
+      full_name?: string;
+    };
   };
 }
 
@@ -35,52 +34,34 @@ export default function SolicitudesPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const supabase = createClient();
+  const { currentCenter } = useCenterContext();
   
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
-  const [centerId, setCenterId] = useState<string>('');
+  const [selectedEstado, setSelectedEstado] = useState<string>('all');
+  const [selectedTipo, setSelectedTipo] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadCenter();
-  }, []);
-
-  useEffect(() => {
-    if (centerId) {
+    if (currentCenter) {
       loadSolicitudes();
     }
-  }, [centerId, selectedStatus, selectedPriority]);
-
-  async function loadCenter() {
-    try {
-      const { data } = await supabase
-        .from('centers')
-        .select('id')
-        .eq('slug', resolvedParams.centerSlug)
-        .single();
-
-      if (data) {
-        setCenterId(data.id);
-      }
-    } catch (err) {
-      console.error('Error al cargar centro:', err);
-    }
-  }
+  }, [currentCenter, selectedEstado, selectedTipo]);
 
   async function loadSolicitudes() {
+    if (!currentCenter) return;
+    
     try {
       setLoading(true);
       setError('');
 
-      let url = `/api/solicitudes?center_id=${centerId}`;
-      if (selectedStatus !== 'all') {
-        url += `&status=${selectedStatus}`;
+      let url = `/api/solicitudes?center_id=${currentCenter.id}`;
+      if (selectedEstado !== 'all') {
+        url += `&estado=${selectedEstado}`;
       }
-      if (selectedPriority !== 'all') {
-        url += `&priority=${selectedPriority}`;
+      if (selectedTipo !== 'all') {
+        url += `&tipo=${selectedTipo}`;
       }
 
       const response = await fetch(url);
@@ -99,76 +80,41 @@ export default function SolicitudesPage({
     }
   }
 
-  function getStatusBadge(status: string) {
-    const badges: Record<string, { label: string; className: string; icon: any }> = {
-      draft: {
-        label: 'Borrador',
-        className: 'bg-gray-100 text-gray-800',
-        icon: FileText
-      },
-      pending: {
-        label: 'Pendiente',
-        className: 'bg-yellow-100 text-yellow-800',
-        icon: Clock
-      },
-      in_review: {
-        label: 'En Revisión',
-        className: 'bg-blue-100 text-blue-800',
-        icon: Eye
-      },
-      approved: {
-        label: 'Aprobada',
-        className: 'bg-green-100 text-green-800',
-        icon: CheckCircle
-      },
-      rejected: {
-        label: 'Rechazada',
-        className: 'bg-red-100 text-red-800',
-        icon: XCircle
-      },
-      completed: {
-        label: 'Completada',
-        className: 'bg-purple-100 text-purple-800',
-        icon: CheckCircle
-      }
-    };
-
-    const badge = badges[status] || badges.draft;
-    const Icon = badge.icon;
-
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}>
-        <Icon className="w-3 h-3" />
-        {badge.label}
-      </span>
-    );
-  }
-
-  function getPriorityBadge(priority: string) {
-    const badges: Record<string, { label: string; className: string }> = {
-      low: { label: 'Baja', className: 'bg-blue-100 text-blue-800' },
-      medium: { label: 'Media', className: 'bg-yellow-100 text-yellow-800' },
-      high: { label: 'Alta', className: 'bg-orange-100 text-orange-800' },
-      urgent: { label: 'Urgente', className: 'bg-red-100 text-red-800' }
-    };
-
-    const badge = badges[priority] || badges.low;
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}>
-        {badge.label}
-      </span>
-    );
-  }
-
   function formatDate(dateString: string) {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
+
+  function getTipoLabel(tipo: string) {
+    const labels: Record<string, string> = {
+      'diplomado_proyeccion_social': 'Diplomado - Proyección Social',
+      'diplomado_extension': 'Diplomado - Extensión',
+      'contrato': 'Contrato',
+      'convenio': 'Convenio'
+    };
+    return labels[tipo] || tipo;
+  }
+
+  // Filtrar solicitudes por búsqueda
+  const filteredSolicitudes = solicitudes.filter(solicitud => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
+                              solicitud.funcionario?.email || '';
+    
+    return (
+      solicitud.id.toLowerCase().includes(searchLower) ||
+      funcionarioNombre.toLowerCase().includes(searchLower) ||
+      getTipoLabel(solicitud.tipo).toLowerCase().includes(searchLower)
+    );
+  });
 
   // Componente de Skeleton Loader
   const SolicitudSkeleton = () => (
@@ -176,15 +122,12 @@ export default function SolicitudesPage({
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="h-5 bg-gray-200 rounded w-16"></div>
+            <div className="h-5 bg-gray-200 rounded w-24"></div>
             <div className="h-6 bg-gray-200 rounded w-1/3"></div>
           </div>
           <div className="h-4 bg-gray-200 rounded w-2/3"></div>
         </div>
-        <div className="space-y-2">
-          <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-          <div className="h-6 bg-gray-200 rounded-full w-16"></div>
-        </div>
+        <div className="h-6 bg-gray-200 rounded-full w-24"></div>
       </div>
       <div className="grid grid-cols-3 gap-4 pt-4 border-t">
         <div className="h-4 bg-gray-200 rounded w-24"></div>
@@ -209,6 +152,7 @@ export default function SolicitudesPage({
         {/* Filtros Skeleton */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex gap-4">
+            <div className="h-10 bg-gray-200 rounded flex-1 animate-pulse"></div>
             <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
             <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
           </div>
@@ -230,128 +174,162 @@ export default function SolicitudesPage({
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Solicitudes</h1>
-          <p className="text-gray-600 mt-1">Gestiona las solicitudes del centro</p>
+          <p className="text-gray-600 mt-1">
+            Gestiona las solicitudes de {currentCenter?.name}
+          </p>
         </div>
         <button
           onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/create`)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus className="w-5 h-5" />
           Nueva Solicitud
         </button>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y Búsqueda */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Búsqueda */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por ID, funcionario o tipo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Filtro por Estado */}
+          <div className="w-full md:w-48">
             <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedEstado}
+              onChange={(e) => setSelectedEstado(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">Todas</option>
-              <option value="draft">Borrador</option>
-              <option value="pending">Pendiente</option>
-              <option value="in_review">En Revisión</option>
-              <option value="approved">Aprobada</option>
-              <option value="rejected">Rechazada</option>
-              <option value="completed">Completada</option>
+              <option value="all">Todos los estados</option>
+              <option value="nuevo">Nuevo</option>
+              <option value="recibido">Recibido</option>
+              <option value="en_comite">En Comité</option>
+              <option value="observado">Observado</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="rechazado">Rechazado</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prioridad
-            </label>
+          {/* Filtro por Tipo */}
+          <div className="w-full md:w-64">
             <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedTipo}
+              onChange={(e) => setSelectedTipo(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">Todas</option>
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta</option>
-              <option value="urgent">Urgente</option>
+              <option value="all">Todos los tipos</option>
+              <option value="diplomado_proyeccion_social">Diplomado - Proyección Social</option>
+              <option value="diplomado_extension">Diplomado - Extensión</option>
+              <option value="contrato">Contrato</option>
+              <option value="convenio">Convenio</option>
             </select>
           </div>
+        </div>
+
+        {/* Contador de resultados */}
+        <div className="mt-3 text-sm text-gray-600">
+          {filteredSolicitudes.length} solicitud{filteredSolicitudes.length !== 1 ? 'es' : ''} encontrada{filteredSolicitudes.length !== 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Lista de Solicitudes */}
-      {solicitudes.length === 0 ? (
+      {filteredSolicitudes.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No hay solicitudes
+            {solicitudes.length === 0 ? 'No hay solicitudes' : 'No se encontraron resultados'}
           </h3>
           <p className="text-gray-600 mb-4">
-            Crea tu primera solicitud para comenzar
+            {solicitudes.length === 0 
+              ? 'Crea tu primera solicitud para comenzar'
+              : 'Intenta ajustar los filtros de búsqueda'
+            }
           </p>
-          <button
-            onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/create`)}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Nueva Solicitud
-          </button>
+          {solicitudes.length === 0 && (
+            <button
+              onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/create`)}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nueva Solicitud
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4">
-          {solicitudes.map((solicitud) => (
-            <div
-              key={solicitud.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/${solicitud.id}`)}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-mono text-gray-500">
-                      #{solicitud.request_number}
-                    </span>
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {solicitud.title}
-                    </h3>
-                  </div>
-                  {solicitud.description && (
-                    <p className="text-gray-600 line-clamp-2">{solicitud.description}</p>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  {getStatusBadge(solicitud.status)}
-                  {getPriorityBadge(solicitud.priority)}
-                </div>
-              </div>
+          {filteredSolicitudes.map((solicitud) => {
+            const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
+                                     solicitud.funcionario?.email || 
+                                     'Desconocido';
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t text-sm text-gray-600">
-                <div>
-                  <span className="font-medium">Tipo:</span>{' '}
-                  <span className="capitalize">{solicitud.request_type.replace('_', ' ')}</span>
+            return (
+              <div
+                key={solicitud.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
+                onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/${solicitud.id}`)}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        #{solicitud.id.slice(0, 8)}
+                      </span>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {getTipoLabel(solicitud.tipo)}
+                      </h3>
+                    </div>
+                    {solicitud.observaciones && (
+                      <p className="text-sm text-gray-600 line-clamp-2 mt-2">
+                        <span className="font-medium">Observaciones:</span> {solicitud.observaciones}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <EstadoBadge estado={solicitud.estado} />
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium">Creada:</span>{' '}
-                  {formatDate(solicitud.created_at)}
-                </div>
-                <div>
-                  <span className="font-medium">Por:</span>{' '}
-                  {solicitud.created_by_user.full_name}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Método:</span>{' '}
+                    <span className="text-gray-600 capitalize">
+                      {solicitud.metodo_ficha_tecnica}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Creada:</span>{' '}
+                    <span className="text-gray-600">
+                      {formatDate(solicitud.created_at)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Por:</span>{' '}
+                    <span className="text-gray-600">
+                      {funcionarioNombre}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

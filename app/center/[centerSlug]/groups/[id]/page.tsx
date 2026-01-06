@@ -483,12 +483,12 @@ export default function GroupDetailPage() {
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-8 w-8">
                                     <div className="h-8 w-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white text-xs font-medium">
-                                      {(user.user_metadata?.full_name || user.user_metadata?.name || user.email).charAt(0).toUpperCase()}
+                                      {(user.user_metadata?.name || user.email).charAt(0).toUpperCase()}
                                     </div>
                                   </div>
                                   <div className="ml-3">
                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {user.user_metadata?.full_name || user.user_metadata?.name || 'Sin nombre'}
+                                      {user.user_metadata?.name || 'Sin nombre'}
                                     </div>
                                   </div>
                                 </div>

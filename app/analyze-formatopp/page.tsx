@@ -86,18 +86,24 @@ export default function AnalyzeFormatoPPPage() {
   const formatopp = structure.structure.formatopp;
   
   // Agrupar por secciones
-  const sections: Record<string, any[]> = {};
+  const sections: Record<string, any> = {};
   let currentSection = 'Sin Sección';
   
   formatopp.forEach((el: any) => {
     if (el.type === 'section') {
       currentSection = el.label;
-      sections[currentSection] = [];
+      sections[currentSection] = {
+        fields: [],
+        subsections: {}
+      };
     } else if (el.type === 'field') {
       if (!sections[currentSection]) {
-        sections[currentSection] = [];
+        sections[currentSection] = {
+          fields: [],
+          subsections: {}
+        };
       }
-      sections[currentSection].push(el);
+      sections[currentSection].fields.push(el);
     }
   });
 
@@ -168,7 +174,7 @@ export default function AnalyzeFormatoPPPage() {
           
           {Object.entries(sections).map(([sectionName, sectionData]) => {
             const totalFields = sectionData.fields.length +
-              Object.values(sectionData.subsections).reduce((sum, fields) => sum + fields.length, 0);
+              Object.values(sectionData.subsections).reduce((sum: number, fields: any) => sum + fields.length, 0);
             const hasSubsections = Object.keys(sectionData.subsections).length > 0;
             
             return (
@@ -262,14 +268,14 @@ export default function AnalyzeFormatoPPPage() {
                         <h4 className="text-lg font-bold text-blue-900 flex items-center gap-2">
                           📎 {subsectionName}
                           <span className="text-sm bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                            {subsectionFields.length} campos
+                            {(subsectionFields as any[]).length} campos
                           </span>
                         </h4>
                       </div>
 
                       {/* Campos de la Subsección */}
                       <div className="space-y-3">
-                        {subsectionFields.map((field: any, idx: number) => {
+                        {(subsectionFields as any[]).map((field: any, idx: number) => {
                           const fieldType = detectFieldType(field.label, field.value);
                           const colorClass = getFieldColor(fieldType);
                           
