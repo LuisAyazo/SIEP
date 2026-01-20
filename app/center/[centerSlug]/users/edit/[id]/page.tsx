@@ -190,7 +190,7 @@ export default function EditUserPage() {
 
       setSuccessMessage('Usuario actualizado correctamente');
       setTimeout(() => {
-        router.push(`/center/${centerSlug}/dashboard/users`);
+        router.push(`/center/${centerSlug}/users`);
       }, 1500);
     } catch (err: any) {
       console.error('Error al actualizar usuario:', err);
