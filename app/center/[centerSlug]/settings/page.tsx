@@ -229,8 +229,8 @@ export default function SettingsPage() {
           variants={itemVariants}
         >
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Configuración</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Configuración</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">
               Personaliza la plataforma según tus preferencias
             </p>
           </div>
@@ -268,9 +268,9 @@ export default function SettingsPage() {
           </div>
         </motion.div>
 
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
           {/* Pestañas */}
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('general')}
@@ -345,61 +345,61 @@ export default function SettingsPage() {
                 key="general"
               >
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Información del Perfil</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Información del Perfil</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Actualiza tu información personal y de contacto.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Nombre completo
                     </label>
                     <input
                       type="text"
                       name="name"
                       id="name"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                       defaultValue="Admin Usuario"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Correo electrónico
                     </label>
                     <input
                       type="email"
                       name="email"
                       id="email"
-                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                      className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                       defaultValue="admin@example.com"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Rol actual
                     </label>
                     <input
                       type="text"
                       name="role"
                       id="role"
-                      className="mt-1 bg-gray-50 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900"
+                      className="mt-1 bg-gray-50 dark:bg-gray-700 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-gray-400"
                       defaultValue="Administrador"
                       disabled
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Departamento
                     </label>
                       <select
                         id="department"
                         name="department"
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        className="mt-1 block w-full h-12 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                       >
                       <option>Tecnología</option>
                       <option>Finanzas</option>
@@ -410,47 +410,47 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-medium text-gray-900">Cambiar contraseña</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Cambiar contraseña</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Actualiza tu contraseña regularmente para mantener tu cuenta segura.
                   </p>
 
                   <div className="mt-4 space-y-4">
                     <div>
-                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Contraseña actual
                       </label>
                       <input
                         type="password"
                         name="current-password"
                         id="current-password"
-                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           Nueva contraseña
                         </label>
                         <input
                           type="password"
                           name="new-password"
                           id="new-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           Confirmar contraseña
                         </label>
                         <input
                           type="password"
                           name="confirm-password"
                           id="confirm-password"
-                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                          className="mt-1 focus:ring-amber-500 focus:border-amber-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         />
                       </div>
                     </div>
@@ -467,8 +467,8 @@ export default function SettingsPage() {
                 key="notifications"
               >
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Preferencias de Notificaciones</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Preferencias de Notificaciones</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Decide qué notificaciones quieres recibir y cómo.
                   </p>
                 </div>
@@ -486,14 +486,14 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="email-notifications" className="font-medium text-gray-700">
+                      <label htmlFor="email-notifications" className="font-medium text-gray-700 dark:text-gray-300">
                         Notificaciones por correo electrónico
                       </label>
-                      <p className="text-gray-500">Recibir notificaciones importantes vía email.</p>
+                      <p className="text-gray-500 dark:text-gray-400">Recibir notificaciones importantes vía email.</p>
                     </div>
                   </div>
 
-                  <div className="ml-8 space-y-4 border-l border-gray-200 pl-6">
+                  <div className="ml-8 space-y-4 border-l border-gray-200 dark:border-gray-700 pl-6">
                     <div className="flex items-start">
                       <div className="flex items-center h-5">
                         <input
@@ -507,10 +507,10 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div className="ml-3 text-sm">
-                        <label htmlFor="new-ficha" className="font-medium text-gray-700">
+                        <label htmlFor="new-ficha" className="font-medium text-gray-700 dark:text-gray-300">
                           Nuevas fichas
                         </label>
-                        <p className="text-gray-500">Cuando se crea una nueva ficha en el sistema.</p>
+                        <p className="text-gray-500 dark:text-gray-400">Cuando se crea una nueva ficha en el sistema.</p>
                       </div>
                     </div>
                     
@@ -527,10 +527,10 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div className="ml-3 text-sm">
-                        <label htmlFor="updates" className="font-medium text-gray-700">
+                        <label htmlFor="updates" className="font-medium text-gray-700 dark:text-gray-300">
                           Actualizaciones de fichas
                         </label>
-                        <p className="text-gray-500">Cuando se modifican fichas existentes.</p>
+                        <p className="text-gray-500 dark:text-gray-400">Cuando se modifican fichas existentes.</p>
                       </div>
                     </div>
                     
@@ -547,10 +547,10 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div className="ml-3 text-sm">
-                        <label htmlFor="approvals" className="font-medium text-gray-700">
+                        <label htmlFor="approvals" className="font-medium text-gray-700 dark:text-gray-300">
                           Aprobaciones
                         </label>
-                        <p className="text-gray-500">Cuando se requiere tu aprobación o cuando se aprueba algo que solicitaste.</p>
+                        <p className="text-gray-500 dark:text-gray-400">Cuando se requiere tu aprobación o cuando se aprueba algo que solicitaste.</p>
                       </div>
                     </div>
                     
@@ -567,10 +567,10 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div className="ml-3 text-sm">
-                        <label htmlFor="system-updates" className="font-medium text-gray-700">
+                        <label htmlFor="system-updates" className="font-medium text-gray-700 dark:text-gray-300">
                           Actualizaciones del sistema
                         </label>
-                        <p className="text-gray-500">Notificaciones sobre cambios en la plataforma.</p>
+                        <p className="text-gray-500 dark:text-gray-400">Notificaciones sobre cambios en la plataforma.</p>
                       </div>
                     </div>
                   </div>
@@ -586,8 +586,8 @@ export default function SettingsPage() {
                 key="display"
               >
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Preferencias de Interfaz</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Preferencias de Interfaz</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Personaliza la apariencia y funcionalidad de la interfaz de usuario.
                   </p>
                 </div>
@@ -595,8 +595,8 @@ export default function SettingsPage() {
                 <div className="mt-6 space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">Modo oscuro</h4>
-                      <p className="text-sm text-gray-500">Activar tema oscuro para reducir el cansancio visual.</p>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Modo oscuro</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Activar tema oscuro para reducir el cansancio visual.</p>
                     </div>
                     <button
                       onClick={() => {
@@ -623,8 +623,8 @@ export default function SettingsPage() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">Vista compacta</h4>
-                      <p className="text-sm text-gray-500">Mostrar más información en menos espacio.</p>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vista compacta</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Mostrar más información en menos espacio.</p>
                     </div>
                     <button
                       onClick={() => {
@@ -651,8 +651,8 @@ export default function SettingsPage() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">Mensaje de bienvenida</h4>
-                      <p className="text-sm text-gray-500">Mostrar saludo personalizado en el dashboard.</p>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Mensaje de bienvenida</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Mostrar saludo personalizado en el dashboard.</p>
                     </div>
                     <button
                       onClick={() => {
@@ -678,7 +678,7 @@ export default function SettingsPage() {
                   </div>
                   
                   <div>
-                    <label htmlFor="language" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Idioma
                     </label>
                       <select
@@ -686,7 +686,7 @@ export default function SettingsPage() {
                         name="language"
                         value={displaySettings.language}
                         onChange={(e) => setDisplaySettings({...displaySettings, language: e.target.value})}
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        className="mt-1 block w-full h-12 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                       >
                       <option value="es">Español</option>
                       <option value="en">English</option>
@@ -706,8 +706,8 @@ export default function SettingsPage() {
                 key="system"
               >
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Configuración del Sistema</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Configuración del Sistema</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Ajusta la configuración técnica del sistema.
                   </p>
                 </div>
@@ -715,8 +715,8 @@ export default function SettingsPage() {
                 <div className="mt-6 space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">Autoguardado</h4>
-                      <p className="text-sm text-gray-500">Guardar automáticamente los cambios en formularios.</p>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Autoguardado</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Guardar automáticamente los cambios en formularios.</p>
                     </div>
                     <button
                       onClick={() => setSystemSettings({...systemSettings, autoSave: !systemSettings.autoSave})}
@@ -736,8 +736,8 @@ export default function SettingsPage() {
                   </div>
                   
                   {systemSettings.autoSave && (
-                    <div className="ml-8 border-l border-gray-200 pl-6">
-                      <label htmlFor="auto-save-interval" className="block text-sm font-medium text-gray-700">
+                    <div className="ml-8 border-l border-gray-200 dark:border-gray-700 pl-6">
+                      <label htmlFor="auto-save-interval" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Intervalo de autoguardado (minutos)
                       </label>
                       <select
@@ -745,7 +745,7 @@ export default function SettingsPage() {
                         name="auto-save-interval"
                         value={systemSettings.autoSaveInterval}
                         onChange={(e) => setSystemSettings({...systemSettings, autoSaveInterval: Number(e.target.value)})}
-                        className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        className="mt-1 block w-full h-12 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                       >
                         <option value="1">1 minuto</option>
                         <option value="5">5 minutos</option>
@@ -757,7 +757,7 @@ export default function SettingsPage() {
                   )}
 
                   <div>
-                    <label htmlFor="session-timeout" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="session-timeout" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Tiempo de inactividad para cierre de sesión (minutos)
                     </label>
                     <select
@@ -765,7 +765,7 @@ export default function SettingsPage() {
                       name="session-timeout"
                       value={systemSettings.sessionTimeout}
                       onChange={(e) => setSystemSettings({...systemSettings, sessionTimeout: Number(e.target.value)})}
-                      className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      className="mt-1 block w-full h-12 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     >
                       <option value="15">15 minutos</option>
                       <option value="30">30 minutos</option>
@@ -776,7 +776,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="default-view" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="default-view" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Vista predeterminada al iniciar sesión
                     </label>
                     <select
@@ -784,7 +784,7 @@ export default function SettingsPage() {
                       name="default-view"
                       value={systemSettings.defaultView}
                       onChange={(e) => setSystemSettings({...systemSettings, defaultView: e.target.value})}
-                      className="mt-1 block w-full h-12 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      className="mt-1 block w-full h-12 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     >
                       <option value="dashboard">Dashboard</option>
                       <option value="forms">Fichas</option>
@@ -795,16 +795,16 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-medium text-red-800">Zona de peligro</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="text-lg font-medium text-red-800 dark:text-red-400">Zona de peligro</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Estas acciones son irreversibles y pueden afectar gravemente a tu cuenta.
                   </p>
                   
                   <div className="mt-4 flex space-x-4">
                     <motion.button
                       type="button"
-                      className="inline-flex items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-700 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                     >
@@ -813,7 +813,7 @@ export default function SettingsPage() {
                     
                     <motion.button
                       type="button"
-                      className="inline-flex items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-700 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                     >
@@ -832,15 +832,15 @@ export default function SettingsPage() {
                 key="prefixes"
               >
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Configuración de Prefijos</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Configuración de Prefijos</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Define los prefijos usados para identificar diferentes tipos de documentos en el sistema.
                   </p>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="fichasPrefix" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="fichasPrefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Prefijo Fichas
                     </label>
                     <div className="mt-1">
@@ -850,15 +850,15 @@ export default function SettingsPage() {
                         id="fichasPrefix"
                         value={prefixSettings.fichasPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         placeholder="FC-"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Ejemplo: FC-2025-001</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ejemplo: FC-2025-001</p>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="presupuestoPrefix" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="presupuestoPrefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Prefijo Presupuestos
                     </label>
                     <div className="mt-1">
@@ -868,15 +868,15 @@ export default function SettingsPage() {
                         id="presupuestoPrefix"
                         value={prefixSettings.presupuestoPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         placeholder="PS-"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Ejemplo: PS-2025-001</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ejemplo: PS-2025-001</p>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="proyectosPrefix" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="proyectosPrefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Prefijo Proyectos
                     </label>
                     <div className="mt-1">
@@ -886,15 +886,15 @@ export default function SettingsPage() {
                         id="proyectosPrefix"
                         value={prefixSettings.proyectosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         placeholder="PY-"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Ejemplo: PY-2025-001</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ejemplo: PY-2025-001</p>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="documentosPrefix" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="documentosPrefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Prefijo Documentos
                     </label>
                     <div className="mt-1">
@@ -904,15 +904,15 @@ export default function SettingsPage() {
                         id="documentosPrefix"
                         value={prefixSettings.documentosPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         placeholder="DOC-"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Ejemplo: DOC-2025-001</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ejemplo: DOC-2025-001</p>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="informesPrefix" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="informesPrefix" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Prefijo Informes
                     </label>
                     <div className="mt-1">
@@ -922,18 +922,18 @@ export default function SettingsPage() {
                         id="informesPrefix"
                         value={prefixSettings.informesPrefix}
                         onChange={handlePrefixChange}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md px-4 h-12 text-gray-900 bg-white"
+                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md px-4 h-12 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                         placeholder="INF-"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Ejemplo: INF-2025-001</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ejemplo: INF-2025-001</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mt-4">
-                  <h4 className="text-sm font-medium text-gray-900">Información sobre prefijos</h4>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Los prefijos ayudan a identificar rápidamente el tipo de documento en el sistema. 
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600 mt-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">Información sobre prefijos</h4>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Los prefijos ayudan a identificar rápidamente el tipo de documento en el sistema.
                     La estructura típica es: {"{PREFIJO}"}-{"{AÑO}"}-{"{SECUENCIAL}"}.
                   </p>
                 </div>
@@ -949,8 +949,8 @@ export default function SettingsPage() {
               >
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">Asignación de Centros a Usuarios</h3>
-                    <p className="mt-1 text-sm text-gray-500">Gestiona qué usuarios tienen acceso a cada centro.</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Asignación de Centros a Usuarios</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gestiona qué usuarios tienen acceso a cada centro.</p>
                   </div>
                 </div>
 
@@ -967,7 +967,7 @@ export default function SettingsPage() {
                       placeholder="Buscar por nombre o email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm text-gray-900"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -990,19 +990,19 @@ export default function SettingsPage() {
                 ) : (
                   <>
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Usuario</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rol</th>
                             {availableCenters.map(center => (
-                              <th key={center.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th key={center.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {center.name}
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                           {users
                             .filter(user =>
                               user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1012,8 +1012,8 @@ export default function SettingsPage() {
                             <tr key={user.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div>
-                                  <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
-                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
                             user.email.toLowerCase().includes(searchTerm.toLowerCase())
                           ).length === 0 && (
                             <tr>
-                              <td colSpan={2 + availableCenters.length} className="px-6 py-4 text-center text-sm text-gray-500">
+                              <td colSpan={2 + availableCenters.length} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No se encontraron usuarios que coincidan con "{searchTerm}"
                               </td>
                             </tr>

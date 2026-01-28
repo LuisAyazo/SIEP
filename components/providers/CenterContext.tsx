@@ -87,7 +87,7 @@ interface CenterContextType {
 
 const CenterContext = createContext<CenterContextType>({
   currentCenter: null,
-  availableCenters: AVAILABLE_CENTERS,
+  availableCenters: [],
   setCenter: () => {},
   addCenter: () => {},
   loading: true
@@ -96,11 +96,14 @@ const CenterContext = createContext<CenterContextType>({
 export const useCenterContext = () => useContext(CenterContext);
 
 export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('🎯 [CenterProvider] Componente montado/renderizado');
+  
   const { session, loading: authLoading } = useSupabaseSession();
   const status = authLoading ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [currentCenter, setCurrentCenter] = useState<Center | null>(null);
   const [availableCenters, setAvailableCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
+  const [centersLoaded, setCentersLoaded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const isInitialized = useRef(false);
@@ -109,16 +112,29 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const defaultCenterForcedRef = useRef(false);
   const lastProcessedPathname = useRef<string | null>(null);
   const supabase = createClient();
+  
+  console.log('🎯 [CenterProvider] Estado actual:', {
+    hasSession: !!session,
+    userId: session?.user?.id,
+    authLoading,
+    centersLoading: loading,
+    centersLoaded,
+    availableCentersCount: availableCenters.length
+  });
 
   // 🔥 Cargar centros asignados al usuario desde Supabase
   useEffect(() => {
     async function loadCenters() {
-      console.log('🔄 Cargando centros desde Supabase...');
+      console.log('🔄 [loadCenters] Iniciando carga de centros desde Supabase...');
+      console.log('🔄 [loadCenters] session?.user?.id:', session?.user?.id);
       
-      // Si no hay sesión, usar los centros por defecto como fallback
+      // Si no hay sesión, NO cargar centros
       if (!session?.user?.id) {
-        console.log('⚠️ No hay sesión de usuario, usando centros por defecto como fallback');
-        setAvailableCenters(AVAILABLE_CENTERS);
+        console.log('⚠️ [loadCenters] No hay sesión de usuario, no se cargan centros');
+        setAvailableCenters([]);
+        setCentersLoaded(true);
+        setLoading(false);
+        console.log('✅ [loadCenters] Estado actualizado: centersLoaded=true, loading=false');
         return;
       }
 
@@ -167,7 +183,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         if (centers && centers.length > 0) {
-          console.log(`✅ ${centers.length} centros cargados para el usuario`);
+          console.log(`✅ [loadCenters] ${centers.length} centros cargados para el usuario`);
           
           const formattedCenters: Center[] = centers.map((center: any, index: number) => ({
             id: center.id,
@@ -179,20 +195,29 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             stats: DEFAULT_STATS
           }));
           
-          console.log('📋 Centros del usuario:', formattedCenters.map(c => c.name));
+          console.log('📋 [loadCenters] Centros del usuario:', formattedCenters.map(c => c.name));
           setAvailableCenters(formattedCenters);
         } else {
-          console.warn('⚠️ Usuario no tiene centros asignados, usando centros por defecto');
-          // Si el usuario no tiene centros asignados, usar los centros por defecto
-          setAvailableCenters(AVAILABLE_CENTERS);
+          console.warn('⚠️ [loadCenters] Usuario no tiene centros asignados');
+          // Si el usuario no tiene centros asignados, dejar el array vacío
+          setAvailableCenters([]);
         }
+        
+        // Marcar que los centros ya se cargaron
+        console.log('✅ [loadCenters] Marcando centersLoaded=true');
+        setCentersLoaded(true);
+        setLoading(false);
       } catch (err) {
-        console.error('❌ Error cargando centros del usuario:', err);
-        // En caso de error, usar los centros por defecto como fallback
-        setAvailableCenters(AVAILABLE_CENTERS);
+        console.error('❌ [loadCenters] Error cargando centros del usuario:', err);
+        // En caso de error, dejar el array vacío
+        setAvailableCenters([]);
+        console.log('✅ [loadCenters] Marcando centersLoaded=true (después de error)');
+        setCentersLoaded(true);
+        setLoading(false);
       }
     }
 
+    console.log('🚀 [useEffect loadCenters] Llamando a loadCenters()...');
     loadCenters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]); // Solo depender del user ID, no del objeto completo
@@ -228,6 +253,12 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Memoized fallbackToDefaultCenter function
   const fallbackToDefaultCenter = useCallback(() => {
+    // Si no hay centros disponibles, NO establecer ningún centro
+    if (availableCenters.length === 0) {
+      console.log('⚠️ No hay centros disponibles, no se establece centro por defecto');
+      return false;
+    }
+    
     console.log('Estableciendo centro por defecto...');
     const defaultCenter = getDefaultCenter();
     if (defaultCenter) {
@@ -243,40 +274,63 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return true;
     }
     return false;
-  }, [getDefaultCenter]);
+  }, [getDefaultCenter, availableCenters.length]);
 
   // Efecto para forzar un centro por defecto al inicio
   useEffect(() => {
     // Solo ejecutar una vez al montar el componente
     if (defaultCenterForcedRef.current) return;
     
-    // 🔥 NO establecer centro hasta que se hayan cargado los centros del usuario
-    // Si availableCenters está vacío, significa que aún no se han cargado desde Supabase
-    if (availableCenters.length === 0) {
-      console.log("⏳ Esperando a que se carguen los centros del usuario desde Supabase...");
+    // Esperar a que los centros se hayan cargado
+    if (!centersLoaded) {
+      console.log("⏳ Esperando a que se carguen los centros...");
       return;
     }
     
-    console.log("Forzando inicialización de centro por defecto en primer mount...");
-    const defaultCenter = getDefaultCenter();
-    
-    if (defaultCenter && !currentCenter) {
-      console.log("Estableciendo centro por defecto al inicio:", defaultCenter.name);
-      setCurrentCenter(defaultCenter);
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('selectedCenter', JSON.stringify(defaultCenter));
-        }
-      } catch (error) {
-        console.error('Error saving default center to localStorage:', error);
-      }
-      
-      // Marcamos que ya forzamos el centro por defecto
+    // Si no hay centros disponibles, marcar como inicializado y terminar
+    if (availableCenters.length === 0) {
+      console.log("⏳ Usuario sin centros asignados, no se establece centro por defecto");
       defaultCenterForcedRef.current = true;
       isInitialized.current = true;
       setLoading(false);
+      return;
     }
-  }, [getDefaultCenter, currentCenter, availableCenters]);
+    
+    // Intentar cargar desde localStorage primero
+    const savedCenter = getSavedCenter();
+    
+    if (savedCenter && !currentCenter) {
+      console.log("Restaurando centro guardado:", savedCenter.name);
+      setCurrentCenter(savedCenter);
+      defaultCenterForcedRef.current = true;
+      isInitialized.current = true;
+      setLoading(false);
+      return;
+    }
+    
+    // Si no hay centro guardado, usar el predeterminado
+    if (!currentCenter) {
+      console.log("Estableciendo centro por defecto al inicio...");
+      const defaultCenter = getDefaultCenter();
+      
+      if (defaultCenter) {
+        console.log("Centro por defecto:", defaultCenter.name);
+        setCurrentCenter(defaultCenter);
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedCenter', JSON.stringify(defaultCenter));
+          }
+        } catch (error) {
+          console.error('Error saving default center to localStorage:', error);
+        }
+        
+        // Marcamos que ya forzamos el centro por defecto
+        defaultCenterForcedRef.current = true;
+        isInitialized.current = true;
+        setLoading(false);
+      }
+    }
+  }, [getDefaultCenter, getSavedCenter, currentCenter, availableCenters, centersLoaded]);
 
   // Inicializar centros cuando cambia el estado de autenticación
   useEffect(() => {
@@ -288,73 +342,53 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       initTimeoutRef.current = null;
     }
     
-    // Si ya está inicializado y tenemos un centro, no hacer nada
-    if (isInitialized.current && currentCenter) {
-      console.log("Already initialized with center:", currentCenter.name);
+    // Si ya está inicializado, no hacer nada
+    if (isInitialized.current) {
+      console.log("Already initialized");
       setLoading(false);
       return;
     }
     
-    setLoading(true);
+    // Si no estamos autenticados, marcar como inicializado sin centro
+    if (status === 'unauthenticated') {
+      console.log("User not authenticated");
+      isInitialized.current = true;
+      setLoading(false);
+      return;
+    }
     
-    // Si estamos autenticados, inicializar el centro
-    if (status === 'authenticated') {
-      console.log("User authenticated, initializing center...");
-      
-      // Intentar cargar desde localStorage
-      const savedCenter = getSavedCenter();
-      
-      if (savedCenter) {
-        console.log('Loading saved center from localStorage:', savedCenter.name);
-        setCurrentCenter(savedCenter);
-        isInitialized.current = true;
-        setLoading(false);
-      } else {
-        // No hay centro guardado, usar el predeterminado
-        console.log('No saved center found, falling back to default');
-        const initialized = fallbackToDefaultCenter();
-        isInitialized.current = initialized;
-        setLoading(false);
-      }
-    } 
-    // Si no estamos autenticados pero estamos en un entorno cliente, también inicializamos un centro por defecto
-    else if (status === 'unauthenticated' && typeof window !== 'undefined') {
-      console.log("User not authenticated, using default center for demo");
-      fallbackToDefaultCenter();
+    // Si el estado de autenticación está cargando, esperar
+    if (status === 'loading') {
+      console.log("Auth status loading...");
+      setLoading(true);
+      return;
+    }
+    
+    // Si estamos autenticados pero los centros aún no se han cargado, esperar
+    if (status === 'authenticated' && !centersLoaded) {
+      console.log("User authenticated, waiting for centers to load...");
+      setLoading(true);
+      return;
+    }
+    
+    // Si llegamos aquí, estamos autenticados y los centros ya se cargaron
+    if (status === 'authenticated' && centersLoaded) {
+      console.log("User authenticated and centers loaded, finalizing initialization...");
       isInitialized.current = true;
       setLoading(false);
     }
-    // Si el estado de autenticación está cargando, ponemos un timeout para evitar que se quede cargando indefinidamente
-    else if (status === 'loading') {
-      console.log("Auth status loading, setting timeout...");
-      initTimeoutRef.current = setTimeout(() => {
-        console.log("Auth timeout reached, forcing initialization");
-        // Si después de 3 segundos aún estamos cargando, forzamos un centro predeterminado
-        if (!isInitialized.current && !currentCenter) {
-          fallbackToDefaultCenter();
-          isInitialized.current = true;
-          setLoading(false);
-        }
-      }, 2000); // Reducido a 2 segundos para una experiencia más rápida
-    }
-    
-    // Limpiar timeout al desmontar
-    return () => {
-      if (initTimeoutRef.current) {
-        clearTimeout(initTimeoutRef.current);
-      }
-    };
-  }, [status, getSavedCenter, fallbackToDefaultCenter, currentCenter]);
+  }, [status, centersLoaded]);
 
   // Efecto para detectar cuando estamos en una ruta de centro pero no tenemos centro seleccionado
   useEffect(() => {
-    // Solo esperar si no hay centros disponibles o si hay redirección en progreso
-    if (redirectionInProgress.current || !pathname || availableCenters.length === 0) {
-      console.log('[CenterContext] Esperando...', {
-        redirectionInProgress: redirectionInProgress.current,
-        pathname,
-        availableCentersCount: availableCenters.length
-      });
+    // Solo esperar si hay redirección en progreso o no hay pathname
+    if (redirectionInProgress.current) {
+      console.log('[CenterContext] Redirección en progreso, esperando...');
+      return;
+    }
+    
+    if (!pathname) {
+      console.log('[CenterContext] No hay pathname aún, esperando...');
       return;
     }
     
@@ -365,6 +399,24 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     
     if (pathname.includes('/center/')) {
+      // 🔥 NO redirigir si los centros aún están cargando
+      if (!centersLoaded) {
+        console.log('[CenterContext] Centros aún cargando, esperando...');
+        return;
+      }
+      
+      // Si el usuario no tiene centros Y ya terminó la carga, redirigir a la página principal
+      if (availableCenters.length === 0) {
+        console.log('[CenterContext] ⚠️ Usuario sin centros en ruta de centro, redirigiendo a /');
+        lastProcessedPathname.current = pathname;
+        redirectionInProgress.current = true;
+        router.replace('/');
+        setTimeout(() => {
+          redirectionInProgress.current = false;
+        }, 500);
+        return;
+      }
+      
       // Extraer el slug del centro de la URL
       const pathParts = pathname.split('/center/')[1]?.split('/') || [];
       const centerSlugInUrl = pathParts[0];

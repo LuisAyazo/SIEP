@@ -1226,10 +1226,10 @@ export default function CreateSolicitudPage() {
 
   if (loadingSections) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando estructura del formulario...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando estructura del formulario...</p>
         </div>
       </div>
     );
@@ -1239,11 +1239,11 @@ export default function CreateSolicitudPage() {
   const currentSubsectionData = sectionsData[currentSection][currentSubsectionName];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-full mx-auto px-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Nueva Solicitud de Ficha Técnica</h1>
-          <p className="text-gray-600 mt-2">Complete el formulario para crear una nueva solicitud</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nueva Solicitud de Ficha Técnica</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Complete el formulario para crear una nueva solicitud</p>
         </div>
 
         <div className="mb-8 overflow-x-auto">
@@ -1297,35 +1297,35 @@ export default function CreateSolicitudPage() {
 
           {/* PASO 1: Información Básica */}
           {step === 1 && (
-            <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Título de la Solicitud *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título de la Solicitud *</label>
                 <input
                   type="text"
                   required
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Ej: Solicitud de Ficha Técnica para Proyecto X"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción</label>
                 <textarea
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                   placeholder="Descripción breve de la solicitud"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prioridad</label>
                 <select
                   value={formData.prioridad}
                   onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as any })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="baja">Baja</option>
                   <option value="media">Media</option>
@@ -1402,13 +1402,13 @@ export default function CreateSolicitudPage() {
           {/* PASO 3b: Importar Excel (si seleccionó importar) */}
           {step === 3 && shouldShowFichaTecnica && metodoFichaTecnica === 'importar' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  📤 Importar Ficha Técnica desde Excel
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Sube el archivo Excel con la ficha técnica completa. El sistema validará que contenga todas las secciones requeridas.
-                </p>
+             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                 📤 Importar Ficha Técnica desde Excel
+               </h3>
+               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                 Sube el archivo Excel con la ficha técnica completa. El sistema validará que contenga todas las secciones requeridas.
+               </p>
                 
                 {!excelFile && (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
@@ -1610,11 +1610,11 @@ export default function CreateSolicitudPage() {
           )}
 
           {/* PASO 3c: Formulario de Ficha Técnica (si seleccionó formulario) */}
-          {step === 3 && shouldShowFichaTecnica && metodoFichaTecnica === 'formulario' && (
-            <div className="flex gap-6 relative">
-              {/* Contenido principal */}
-              <div className={`space-y-6 transition-all duration-300 ${rightMenuCollapsed ? 'flex-1' : 'flex-1'}`}>
-                <div className="bg-white rounded-lg shadow-sm p-6">
+         {step === 3 && shouldShowFichaTecnica && metodoFichaTecnica === 'formulario' && (
+           <div className="flex gap-6 relative">
+             {/* Contenido principal */}
+             <div className={`space-y-6 transition-all duration-300 ${rightMenuCollapsed ? 'flex-1' : 'flex-1'}`}>
+               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                   {currentSubsectionData ? (
                     renderSubsectionForm(currentSection, currentSubsectionName, currentSubsectionData)
                   ) : (
@@ -1712,8 +1712,8 @@ export default function CreateSolicitudPage() {
               {!rightMenuCollapsed && (
                 <div className="w-72 space-y-3 transition-all duration-300">
                 {/* INFORMACIÓN TÉCNICA */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <h3 className="font-semibold text-gray-900 text-xs mb-2">INFORMACIÓN TÉCNICA</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-xs mb-2">INFORMACIÓN TÉCNICA</h3>
                   <div className="space-y-0.5">
                     {sectionNames['INFORMACIÓN TÉCNICA'].map((name, idx) => (
                       <button
@@ -1726,7 +1726,7 @@ export default function CreateSolicitudPage() {
                         className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                           currentSection === 'INFORMACIÓN TÉCNICA' && currentSubsection === idx
                             ? 'bg-blue-600 text-white'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {idx + 1}. {name}
@@ -1736,8 +1736,8 @@ export default function CreateSolicitudPage() {
                 </div>
 
                 {/* INFORMACIÓN PRESUPUESTAL */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <h3 className="font-semibold text-gray-900 text-xs mb-2">INFORMACIÓN PRESUPUESTAL</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-xs mb-2">INFORMACIÓN PRESUPUESTAL</h3>
                   <div className="space-y-0.5">
                     {sectionNames['INFORMACIÓN PRESUPUESTAL'].map((name, idx) => (
                       <button
@@ -1750,7 +1750,7 @@ export default function CreateSolicitudPage() {
                         className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                           currentSection === 'INFORMACIÓN PRESUPUESTAL' && currentSubsection === idx
                             ? 'bg-blue-600 text-white'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {idx + 1}. {name}
@@ -1760,8 +1760,8 @@ export default function CreateSolicitudPage() {
                 </div>
 
                 {/* AUTORIZACIONES */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <h3 className="font-semibold text-gray-900 text-xs mb-2">AUTORIZACIONES</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-xs mb-2">AUTORIZACIONES</h3>
                   <div className="space-y-0.5">
                     {sectionNames['AUTORIZACIONES'].map((name, idx) => (
                       <button
@@ -1774,7 +1774,7 @@ export default function CreateSolicitudPage() {
                         className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                           currentSection === 'AUTORIZACIONES' && currentSubsection === idx
                             ? 'bg-blue-600 text-white'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {idx + 1}. {name}

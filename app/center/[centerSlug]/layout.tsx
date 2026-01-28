@@ -15,8 +15,15 @@ export default function CenterLayout({
 
   useEffect(() => {
     // Skip effect execution if centers are still loading or center slug is not available
-    if (loading || !centerSlug || availableCenters.length === 0) {
+    if (loading || !centerSlug) {
       console.log('[CenterLayout] Esperando datos...', { loading, centerSlug, availableCentersCount: availableCenters.length });
+      return;
+    }
+
+    // Si el usuario no tiene centros asignados, redirigir a la página principal
+    if (availableCenters.length === 0) {
+      console.log('[CenterLayout] ⚠️ Usuario sin centros asignados, redirigiendo a /');
+      router.replace('/');
       return;
     }
 

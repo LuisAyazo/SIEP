@@ -306,20 +306,20 @@ export default function RolesPage() {
         variants={containerVariants}
       >
         {/* Header */}
-        <motion.div className="bg-white rounded-lg shadow-sm p-6" variants={itemVariants}>
+        <motion.div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6" variants={itemVariants}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestión de Roles</h1>
-              <p className="text-gray-600 mt-2">Administra los 6 roles del sistema SIEP y sus permisos</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Roles</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">Administra los 6 roles del sistema SIEP y sus permisos</p>
             </div>
             <div className="flex gap-3">
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'grid' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -330,8 +330,8 @@ export default function RolesPage() {
                   onClick={() => setViewMode('table')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'table' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -354,11 +354,11 @@ export default function RolesPage() {
 
         {/* Stats Overview */}
         <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4" variants={itemVariants}>
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Roles</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{roles.length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total de Roles</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{roles.length}</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
@@ -367,11 +367,11 @@ export default function RolesPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Roles del Sistema</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{roles.filter(r => r.isSystem).length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Roles del Sistema</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{roles.filter(r => r.isSystem).length}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
@@ -380,11 +380,11 @@ export default function RolesPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Usuarios</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Usuarios</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
                   {roles.reduce((acc, role) => acc + role.userCount, 0)}
                 </p>
               </div>
@@ -415,7 +415,7 @@ export default function RolesPage() {
             {roles.map((role, index) => (
               <motion.div
                 key={role.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -427,7 +427,7 @@ export default function RolesPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-4xl">{role.icon}</span>
                       <div>
-                        <h3 className="text-lg font-bold text-gray-900">{role.displayName}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{role.displayName}</h3>
                         <span className={`text-xs px-2 py-1 rounded-full bg-${role.color}-100 text-${role.color}-800`}>
                           {role.name}
                         </span>
@@ -440,9 +440,9 @@ export default function RolesPage() {
                     )}
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">{role.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">{role.description}</p>
                   
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
                     <span className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
@@ -462,8 +462,8 @@ export default function RolesPage() {
                       onClick={() => setSelectedRole(selectedRole === role.id ? null : role.id)}
                       className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         selectedRole === role.id
-                          ? `bg-${role.color}-100 text-${role.color}-800`
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? `bg-${role.color}-100 dark:bg-${role.color}-900/30 text-${role.color}-800 dark:text-${role.color}-300`
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {selectedRole === role.id ? 'Ocultar' : 'Ver'} Permisos
@@ -498,9 +498,9 @@ export default function RolesPage() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="mt-4 pt-4 border-t border-gray-200"
+                        className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
                       >
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Permisos:</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Permisos:</h4>
                         <div className="flex flex-wrap gap-1">
                           {role.permissions.map((perm, i) => (
                             <span
@@ -523,40 +523,40 @@ export default function RolesPage() {
 
         {/* Table View */}
         {viewMode === 'table' && (
-          <motion.div className="bg-white rounded-lg shadow-sm overflow-hidden" variants={itemVariants}>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <motion.div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden" variants={itemVariants}>
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuarios</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Permisos</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rol</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Descripción</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Usuarios</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Permisos</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {roles.map((role, index) => (
                   <motion.tr
                     key={role.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{role.icon}</span>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{role.displayName}</div>
-                          <div className="text-xs text-gray-500">{role.name}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{role.displayName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{role.name}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600 max-w-md">{role.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 max-w-md">{role.description}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{role.userCount}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{role.userCount}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full bg-${role.color}-100 text-${role.color}-800`}>
@@ -592,9 +592,9 @@ export default function RolesPage() {
         )}
 
         {/* Permissions Reference */}
-        <motion.div className="bg-white rounded-lg shadow-sm p-6" variants={itemVariants}>
+        <motion.div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6" variants={itemVariants}>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Referencia de Permisos</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Referencia de Permisos</h3>
             <button
               onClick={() => setShowInfoPanel(!showInfoPanel)}
               className="text-amber-600 hover:text-amber-700 font-medium text-sm"
@@ -612,15 +612,15 @@ export default function RolesPage() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               >
                 {Object.entries(permissionGroups).map(([group, perms]) => (
-                  <div key={group} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">{group}</h4>
+                  <div key={group} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{group}</h4>
                     <ul className="space-y-2">
                       {perms.map(perm => (
-                        <li key={perm} className="text-sm text-gray-600 flex items-start gap-2">
-                          <span className="text-amber-500 mt-1">•</span>
+                        <li key={perm} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                          <span className="text-amber-500 dark:text-amber-400 mt-1">•</span>
                           <div>
-                            <div className="font-medium text-gray-700">{permissionDescriptions[perm]}</div>
-                            <div className="text-xs text-gray-500">{perm}</div>
+                            <div className="font-medium text-gray-700 dark:text-gray-200">{permissionDescriptions[perm]}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{perm}</div>
                           </div>
                         </li>
                       ))}

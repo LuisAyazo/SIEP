@@ -16,6 +16,7 @@ interface User {
   full_name: string;
   role: string;
   created_at: string;
+  centers?: Array<{ id: string; name: string; slug: string }>;
 }
 
 // Role descriptions for the role summary cards
@@ -106,7 +107,7 @@ export default function UsersPage() {
       try {
         const supabase = createClient();
         
-        // Obtener usuarios con sus roles
+        // Obtener usuarios con sus roles y centros
         const { data: usersData, error: usersError } = await supabase
           .from('profiles')
           .select(`
@@ -117,6 +118,13 @@ export default function UsersPage() {
             user_roles (
               roles (
                 name
+              )
+            ),
+            user_centers (
+              centers (
+                id,
+                name,
+                slug
               )
             )
           `);
@@ -141,13 +149,17 @@ export default function UsersPage() {
           
           console.log(`Usuario ${user.email}: rol asignado =`, primaryRole);
           
+          // Obtener centros del usuario
+          const centers = user.user_centers?.map((uc: any) => uc.centers).filter(Boolean) || [];
+          
           return {
             id: user.id,
             username: user.email?.split('@')[0] || '',
             email: user.email || '',
             full_name: user.full_name || 'Sin nombre',
             role: primaryRole,
-            created_at: user.created_at
+            created_at: user.created_at,
+            centers: centers
           };
         }) || [];
         
@@ -222,7 +234,7 @@ export default function UsersPage() {
     >
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Usuarios</h1>
           <Link href={`/center/${centerSlug}/users/create`}>
             <button className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md flex items-center shadow-md transition-all duration-200 font-medium">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -239,7 +251,7 @@ export default function UsersPage() {
             {Object.entries(roleDescriptions).map(([role, { title, description, color, icon }], index) => (
               <motion.div
                 key={role}
-                className={`bg-white rounded-lg shadow-md p-4 border-l-4 border-${color}-500 hover:shadow-lg transition-shadow`}
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 border-${color}-500 hover:shadow-lg transition-shadow`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -250,9 +262,9 @@ export default function UsersPage() {
                     {icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800">{title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{description}</p>
-                    <div className="mt-2 text-sm font-medium text-gray-800">
+                    <h3 className="font-semibold text-gray-800 dark:text-white">{title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{description}</p>
+                    <div className="mt-2 text-sm font-medium text-gray-800 dark:text-gray-200">
                       Usuarios: <span className={`text-${color}-600`}>{roleCount[role] || 0}</span>
                     </div>
                   </div>
@@ -262,7 +274,7 @@ export default function UsersPage() {
           </div>
         )}
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           {error && (
             <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
               <p>{error}</p>
@@ -280,7 +292,7 @@ export default function UsersPage() {
                 </div>
                 <input
                   type="text"
-                  className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 shadow-sm focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50"
+                  className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50"
                   placeholder="Buscar por nombre, email o usuario..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -288,7 +300,7 @@ export default function UsersPage() {
               </div>
 
               <select
-                className="border border-gray-300 rounded-md shadow-sm py-2 pl-3 pr-10 text-base focus:outline-none focus:ring-amber-500 focus:border-amber-500"
+                className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm py-2 pl-3 pr-10 text-base focus:outline-none focus:ring-amber-500 focus:border-amber-500"
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
               >
@@ -303,7 +315,7 @@ export default function UsersPage() {
 
               <button
                 onClick={() => setShowRoleSummary(!showRoleSummary)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
               >
                 {showRoleSummary ? 'Ocultar resumen' : 'Mostrar resumen'}
               </button>
@@ -326,34 +338,35 @@ export default function UsersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto rounded-lg shadow">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo electrónico</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre completo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de creación</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Usuario</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Correo electrónico</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nombre completo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rol</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Centros</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha de creación</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredUsers.map((user, index) => (
                     <motion.tr 
                       key={user.id} 
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{user.full_name}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{user.full_name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -366,8 +379,27 @@ export default function UsersPage() {
                           {roleDescriptions[user.role as keyof typeof roleDescriptions]?.title || user.role}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {user.centers && user.centers.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.centers.map((center) => (
+                                <span
+                                  key={center.id}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                  title={center.name}
+                                >
+                                  {center.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic text-xs">Sin centros asignados</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.created_at).toLocaleDateString()}
+                        <span className="text-gray-900 dark:text-gray-300">{new Date(user.created_at).toLocaleDateString()}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -395,7 +427,7 @@ export default function UsersPage() {
                   
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                         No se encontraron usuarios con los filtros seleccionados.
                       </td>
                     </tr>

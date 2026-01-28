@@ -118,8 +118,10 @@ function PieChart({ data, labels, colors }: { data: number[], labels: string[], 
   });
   
   return (
-    <div className="flex items-center justify-center gap-8">
-      <svg viewBox="0 0 200 200" className="w-64 h-64">
+    <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 w-full">
+      <svg viewBox="0 0 200 200" className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44 flex-shrink-0">
+        {/* Background circle for dark mode */}
+        <circle cx="100" cy="100" r="100" className="fill-white dark:fill-gray-800" />
         {segments.map((segment, index) => (
           <g key={index}>
             <path
@@ -127,6 +129,7 @@ function PieChart({ data, labels, colors }: { data: number[], labels: string[], 
               fill={segment.color}
               stroke="white"
               strokeWidth="2"
+              className="dark:stroke-gray-700"
             />
             <text
               x={segment.labelX}
@@ -142,14 +145,14 @@ function PieChart({ data, labels, colors }: { data: number[], labels: string[], 
           </g>
         ))}
       </svg>
-      <div className="space-y-2">
+      <div className="space-y-1 flex-shrink-0 text-xs md:text-sm">
         {labels.map((label, index) => (
           <div key={index} className="flex items-center gap-2 text-sm">
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: colors[index] }}
             />
-            <span className="text-gray-700">{label}</span>
+            <span className="text-gray-700 dark:text-gray-300">{label}</span>
           </div>
         ))}
       </div>
@@ -214,8 +217,10 @@ function DonutChart({ data, labels, colors }: { data: number[], labels: string[]
   });
   
   return (
-    <div className="flex items-center justify-center gap-8">
-      <svg viewBox="0 0 200 200" className="w-64 h-64">
+    <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 w-full">
+      <svg viewBox="0 0 200 200" className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44 flex-shrink-0">
+        {/* Background circle for dark mode */}
+        <circle cx="100" cy="100" r="100" className="fill-white dark:fill-gray-800" />
         {segments.map((segment, index) => (
           <g key={index}>
             <path
@@ -223,6 +228,7 @@ function DonutChart({ data, labels, colors }: { data: number[], labels: string[]
               fill={segment.color}
               stroke="white"
               strokeWidth="1"
+              className="dark:stroke-gray-700"
             />
             <text
               x={segment.labelX}
@@ -238,14 +244,14 @@ function DonutChart({ data, labels, colors }: { data: number[], labels: string[]
           </g>
         ))}
       </svg>
-      <div className="space-y-2">
+      <div className="space-y-1 flex-shrink-0 text-xs md:text-sm">
         {labels.map((label, index) => (
           <div key={index} className="flex items-center gap-2 text-sm">
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: colors[index] }}
             />
-            <span className="text-gray-700">{label}</span>
+            <span className="text-gray-700 dark:text-gray-300">{label}</span>
           </div>
         ))}
       </div>
@@ -294,7 +300,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
   const currentConvenios = CONVENIOS_DATA.slice(conveniosStartIndex, conveniosEndIndex);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-8 py-4">
         <div className="flex justify-between items-center">
@@ -335,11 +341,11 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
 
       {/* Main Content */}
       <div className="px-8 py-6">
-        <div className="grid grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Left Column - Logo and Table */}
-          <div className="col-span-3 flex flex-col gap-6">
+          <div className="lg:col-span-3 flex flex-col gap-6">
             {/* Logo */}
-            <div className="bg-white rounded-lg p-6 shadow-sm flex items-center justify-center shrink-0">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm flex items-center justify-center shrink-0">
               <Image 
                 src="/images/uni-bicentenaria.png" 
                 alt="Universidad de Cartagena 200 años"
@@ -350,7 +356,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* Lugar de Ejecución Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-amber-500 text-white px-4 py-3 flex justify-between items-center">
                 <span className="font-bold">LUGAR DE EJECUCION</span>
                 <span className="font-bold">Recor...</span>
@@ -359,24 +365,24 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                 <table className="w-full">
                   <tbody>
                     {currentItems.map((item, index) => (
-                      <tr 
+                      <tr
                         key={index}
-                        className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                        className={index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}
                       >
-                        <td className="px-4 py-1 text-xs text-gray-700">{item.lugar}</td>
-                        <td className="px-4 py-1 text-xs text-gray-700 text-right">{item.recorrido}</td>
+                        <td className="px-4 py-1 text-xs text-gray-700 dark:text-gray-300">{item.lugar}</td>
+                        <td className="px-4 py-1 text-xs text-gray-700 dark:text-gray-300 text-right">{item.recorrido}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-gray-100 font-bold border-t-2 border-gray-300">
-                      <td className="px-4 py-1 text-xs">Total</td>
-                      <td className="px-4 py-1 text-xs text-right">{MOCK_DATA.totalConvenios}</td>
+                    <tr className="bg-gray-100 dark:bg-gray-700 font-bold border-t-2 border-gray-300 dark:border-gray-600">
+                      <td className="px-4 py-1 text-xs dark:text-gray-300">Total</td>
+                      <td className="px-4 py-1 text-xs dark:text-gray-300 text-right">{MOCK_DATA.totalConvenios}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
                 <span>1 - {itemsPerPage} / {itemsPerPage}</span>
                 <div className="flex gap-2">
                   <button 
@@ -399,10 +405,10 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           </div>
 
           {/* Middle Column - Charts */}
-          <div className="col-span-5 flex flex-col gap-6">
+          <div className="lg:col-span-5 flex flex-col gap-6">
             {/* ALCANCE Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col min-h-[384px]">
-              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">ALCANCE</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 flex flex-col min-h-[384px]">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white mb-4 text-base md:text-lg">ALCANCE</h3>
               <div className="flex items-center justify-center flex-1">
                 <PieChart
                   data={[
@@ -419,8 +425,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* MODALIDAD DE SERVICIOS Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col min-h-[400px]">
-              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">MODALIDAD DE SERVICIOS</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 flex flex-col min-h-[400px]">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white mb-4 text-base md:text-lg">MODALIDAD DE SERVICIOS</h3>
               <div className="flex items-center justify-center flex-1">
                 <DonutChart
                   data={[
@@ -437,82 +443,82 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           </div>
 
           {/* Right Column - Financial Metrics */}
-          <div className="col-span-4 space-y-3 flex flex-col">
+          <div className="lg:col-span-4 space-y-3 flex flex-col">
             {/* Total Convenios */}
-            <div className="bg-white rounded-lg shadow-sm p-3">
-              <div className="text-xs text-gray-600 mb-1">TOTAL CONVENIOS</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">TOTAL CONVENIOS</div>
               <div className="bg-slate-800 text-white text-3xl font-bold text-center py-3 rounded-lg">
                 {MOCK_DATA.totalConvenios}
               </div>
             </div>
 
             {/* Total Apalancamiento */}
-            <div className="bg-white rounded-lg shadow-sm p-3">
-              <div className="text-xs text-gray-600 mb-1">TOTAL APALANCAMIENTO</div>
-              <div className="bg-purple-900 text-white text-xl font-bold text-center py-3 rounded-lg">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">TOTAL APALANCAMIENTO</div>
+              <div className="bg-purple-900 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-center py-2 rounded-lg px-1">
                 $ {formatNumber(MOCK_DATA.totalApalancamiento)}
               </div>
             </div>
 
             {/* Ingresos and Contrapartida */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">INGRESOS</div>
-                <div className="bg-amber-500 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">INGRESOS</div>
+                <div className="bg-amber-500 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   {formatNumber(MOCK_DATA.ingresos)}
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">CONTRAPARTIDA</div>
-                <div className="bg-amber-500 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">CONTRAPARTIDA</div>
+                <div className="bg-amber-500 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   {formatNumber(MOCK_DATA.contrapartida)}
                 </div>
               </div>
             </div>
 
             {/* Total Aportes */}
-            <div className="bg-white rounded-lg shadow-sm p-3">
-              <div className="text-xs text-gray-600 mb-1">TOTAL APORTES</div>
-              <div className="bg-green-600 text-white text-xl font-bold text-center py-3 rounded-lg">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">TOTAL APORTES</div>
+              <div className="bg-green-600 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-center py-2 rounded-lg px-1">
                 {formatNumber(MOCK_DATA.totalAportes)}
               </div>
             </div>
 
             {/* Gastos Directos and Administración */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">GASTOS DIRECTOS</div>
-                <div className="bg-slate-800 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">GASTOS DIRECTOS</div>
+                <div className="bg-slate-800 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   {formatNumber(MOCK_DATA.gastosDirectos)}
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">GASTOS DE ADMINISTRACIÓN</div>
-                <div className="bg-slate-800 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">GASTOS DE ADMINISTRACIÓN</div>
+                <div className="bg-slate-800 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   {formatNumber(MOCK_DATA.gastosAdministracion)}
                 </div>
               </div>
             </div>
 
             {/* Inversiones */}
-            <div className="bg-white rounded-lg shadow-sm p-3">
-              <div className="text-xs text-gray-600 mb-1">INVERSIONES</div>
-              <div className="bg-green-600 text-white text-xl font-bold text-center py-3 rounded-lg">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">INVERSIONES</div>
+              <div className="bg-green-600 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-center py-2 rounded-lg px-1">
                 {formatNumber(MOCK_DATA.inversiones)}
               </div>
             </div>
 
             {/* Total Recaudo and Saldo */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">TOTAL RECAUDO</div>
-                <div className="bg-green-600 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">TOTAL RECAUDO</div>
+                <div className="bg-green-600 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   {formatNumber(MOCK_DATA.totalRecaudo)}
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm p-3">
-                <div className="text-xs text-gray-600 mb-1">SALDO</div>
-                <div className="bg-green-600 text-white text-base font-bold text-center py-2 rounded-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 overflow-hidden">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">SALDO</div>
+                <div className="bg-green-600 text-white text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-bold text-center py-2 rounded-lg px-1">
                   $ {formatNumber(MOCK_DATA.saldo)}
                 </div>
               </div>
@@ -522,8 +528,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
 
         {/* IMPACTOS QUE TRASFORMAN Section */}
         <div className="mt-8">
-          <div className="bg-white border border-gray-300 rounded-lg p-4 mb-6">
-            <h2 className="text-2xl font-bold text-center text-gray-800">IMPACTOS QUE TRASFORMAN</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-6">
+            <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white">IMPACTOS QUE TRASFORMAN</h2>
           </div>
           
           {/* Stat Cards with Images */}
@@ -582,13 +588,15 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           </div>
 
           {/* LÍNEA DE ACCIÓN Chart - Full Width with detailed legend */}
-          <div className="bg-white border border-gray-300 rounded-lg p-6 mb-6">
-            <h3 className="text-center font-bold text-gray-800 mb-6 text-lg">LÍNEA DE ACCIÓN</h3>
-            <div className="grid grid-cols-2 gap-8">
+          <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 md:p-6 mb-6">
+            <h3 className="text-center font-bold text-gray-800 dark:text-white mb-4 md:mb-6 text-base md:text-lg">LÍNEA DE ACCIÓN</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
               {/* Donut Chart with center icon */}
               <div className="flex items-center justify-center">
-                <div className="relative">
-                  <svg viewBox="0 0 200 200" className="w-80 h-80">
+                <div className="relative w-full max-w-[300px] md:max-w-sm">
+                  <svg viewBox="0 0 200 200" className="w-full h-auto">
+                    {/* Background circle for dark mode */}
+                    <circle cx="100" cy="100" r="100" className="fill-white dark:fill-gray-800" />
                     {/* Donut segments */}
                     <path d="M 100 10 A 90 90 0 0 1 189.5 69.5 L 154.2 84.7 A 54 54 0 0 0 100 46 Z" fill="#1e3a8a" stroke="white" strokeWidth="1"/>
                     <path d="M 189.5 69.5 A 90 90 0 0 1 189.5 130.5 L 154.2 115.3 A 54 54 0 0 0 154.2 84.7 Z" fill="#f59e0b" stroke="white" strokeWidth="1"/>
@@ -602,17 +610,17 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                     <path d="M 23.5 45.5 A 90 90 0 0 1 100 10 L 100 46 A 54 54 0 0 0 59.1 67.3 Z" fill="#d1d5db" stroke="white" strokeWidth="1"/>
                     
                     {/* Center circle */}
-                    <circle cx="100" cy="100" r="54" fill="white"/>
+                    <circle cx="100" cy="100" r="54" className="fill-white dark:fill-gray-800"/>
                   </svg>
                   
                   {/* Center Image */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <Image 
-                      src="/images/manos-ramas.png" 
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/4">
+                    <Image
+                      src="/images/manos-ramas.png"
                       alt="Manos con ramas"
                       width={100}
                       height={100}
-                      className="object-contain"
+                      className="object-contain w-full h-auto"
                     />
                   </div>
                   
@@ -645,7 +653,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
               </div>
               
               {/* Legend with full ODS names */}
-              <div className="flex flex-col justify-center space-y-2 text-sm">
+              <div className="flex flex-col justify-center space-y-2 text-xs md:text-sm dark:text-gray-300">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full bg-[#1e3a8a]"></div>
                   <span>ODS 16. PAZ, JUSTICIA E INSTITUCIONES</span>
@@ -693,28 +701,28 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           {/* Bottom Section - Two Buttons */}
           <div className="grid grid-cols-2 gap-6 mb-8">
             {/* ALIANZAS PARA EL DESARROLLO SOCIAL - Button */}
-            <button className="bg-white border-2 border-gray-800 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-              <h3 className="text-center font-bold text-gray-800 text-lg">ALIANZAS PARA EL DESARROLLO SOCIAL</h3>
+            <button className="bg-white dark:bg-gray-800 border-2 border-gray-800 dark:border-gray-600 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white text-lg">ALIANZAS PARA EL DESARROLLO SOCIAL</h3>
             </button>
 
             {/* RESULTADOS POR PROYECTO - Button */}
-            <button className="bg-white border-2 border-gray-800 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-              <h3 className="text-center font-bold text-gray-800 text-lg">RESULTADOS POR PROYECTO</h3>
+            <button className="bg-white dark:bg-gray-800 border-2 border-gray-800 dark:border-gray-600 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white text-lg">RESULTADOS POR PROYECTO</h3>
             </button>
           </div>
 
           {/* Four Tables Section - Adjusted widths */}
           <div className="grid grid-cols-12 gap-6 mb-8">
             {/* CONTRATANTE Table - Wider */}
-            <div className="col-span-4 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#f59e0b] text-white px-4 py-3 font-bold">
                 CONTRATANTE
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 <table className="w-full">
                   <tbody>
-                    <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">AGENCIA DE DESARROLLO RURAL</td></tr>
-                    <tr className="bg-white"><td className="px-4 py-2 text-xs">GOBERNACIÓN DE BOLÍVAR</td></tr>
+                    <tr className="bg-gray-100 dark:bg-gray-700"><td className="px-4 py-2 text-xs dark:text-gray-300">AGENCIA DE DESARROLLO RURAL</td></tr>
+                    <tr className="bg-white dark:bg-gray-800"><td className="px-4 py-2 text-xs dark:text-gray-300">GOBERNACIÓN DE BOLÍVAR</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">GOBERNACION DE BOLIVAR</td></tr>
                     <tr className="bg-white"><td className="px-4 py-2 text-xs">ALCALDÍA DE CARTAGENA</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">UNIVERSIDAD DE CORDOBA - UNIVERSIDAD DEL ATLANTICO</td></tr>
@@ -735,7 +743,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
                 <span>1 - 20 / 112</span>
                 <div className="flex gap-2">
                   <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
@@ -745,15 +753,15 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* UNIDAD EJECUTORA Table - Wider */}
-            <div className="col-span-4 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#1e293b] text-white px-4 py-3 font-bold">
                 UNIDAD EJECUTORA
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 <table className="w-full">
                   <tbody>
-                    <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">FACULTAD DE INGENIERÍA</td></tr>
-                    <tr className="bg-white"><td className="px-4 py-2 text-xs">FACULTAD DE CIENCIAS SOCIALES Y EDUCACIÓN</td></tr>
+                    <tr className="bg-gray-100 dark:bg-gray-700"><td className="px-4 py-2 text-xs dark:text-gray-300">FACULTAD DE INGENIERÍA</td></tr>
+                    <tr className="bg-white dark:bg-gray-800"><td className="px-4 py-2 text-xs dark:text-gray-300">FACULTAD DE CIENCIAS SOCIALES Y EDUCACIÓN</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">OBSERVATORIO PARA LA EQUIDAD Y EL DESARROLLO CON ENFOQUE DE GÉNERO</td></tr>
                     <tr className="bg-white"><td className="px-4 py-2 text-xs">OBSERVATORIO DEL PATRIMONIO CULTURAL</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">CENTRO DE EDUCACIÓN CONTINUA</td></tr>
@@ -775,7 +783,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
                 <span>1 - 20 / 46</span>
                 <div className="flex gap-2">
                   <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
@@ -785,7 +793,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* COORDINADOR Table */}
-            <div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#14b8a6] text-white px-4 py-3 font-bold flex justify-between">
                 <span>COORDINADOR</span>
                 <span>Rec...</span>
@@ -793,8 +801,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
               <div className="max-h-[400px] overflow-y-auto">
                 <table className="w-full">
                   <tbody>
-                    <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">LUIS ALBERTO GARCIA ZAPATEIRO</td><td className="px-4 py-2 text-xs text-right">4</td></tr>
-                    <tr className="bg-white"><td className="px-4 py-2 text-xs">RUTH GUTIERREZ MEZA</td><td className="px-4 py-2 text-xs text-right">9</td></tr>
+                    <tr className="bg-gray-100 dark:bg-gray-700"><td className="px-4 py-2 text-xs dark:text-gray-300">LUIS ALBERTO GARCIA ZAPATEIRO</td><td className="px-4 py-2 text-xs dark:text-gray-300 text-right">4</td></tr>
+                    <tr className="bg-white dark:bg-gray-800"><td className="px-4 py-2 text-xs dark:text-gray-300">RUTH GUTIERREZ MEZA</td><td className="px-4 py-2 text-xs dark:text-gray-300 text-right">9</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">ARNOLDO BERROCAL OLAVE</td><td className="px-4 py-2 text-xs text-right">3</td></tr>
                     <tr className="bg-white"><td className="px-4 py-2 text-xs">LALIA BLANQUICETT ANAYA</td><td className="px-4 py-2 text-xs text-right">7</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">LALIA BLANQUICETT ANAYA</td><td className="px-4 py-2 text-xs text-right">23</td></tr>
@@ -816,7 +824,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
                 <span>1 - 20 / 83</span>
                 <div className="flex gap-2">
                   <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
@@ -826,15 +834,15 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* SUPERVISORES Table */}
-            <div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               <div className="bg-[#581c87] text-white px-4 py-3 font-bold">
                 SUPERVISORES
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 <table className="w-full">
                   <tbody>
-                    <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">CENTRO DE SERVICIOS EN CONSULTORIAS, ASESORÍAS, INTERVENTORÍAS Y DONACIONES</td></tr>
-                    <tr className="bg-white"><td className="px-4 py-2 text-xs">CENTRO DE SERVICIOS</td></tr>
+                    <tr className="bg-gray-100 dark:bg-gray-700"><td className="px-4 py-2 text-xs dark:text-gray-300">CENTRO DE SERVICIOS EN CONSULTORIAS, ASESORÍAS, INTERVENTORÍAS Y DONACIONES</td></tr>
+                    <tr className="bg-white dark:bg-gray-800"><td className="px-4 py-2 text-xs dark:text-gray-300">CENTRO DE SERVICIOS</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">CENTRO DE SERVICIOS EN CONSULTORIAS, ASESORÍAS, INTERVENTORÍAS Y DONACIONES</td></tr>
                     <tr className="bg-white"><td className="px-4 py-2 text-xs">MARTIN DIAZ PINEDA</td></tr>
                     <tr className="bg-gray-100"><td className="px-4 py-2 text-xs">ADRIANA MARGARITA SALADEN SÁNCHEZ</td></tr>
@@ -842,7 +850,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
                 <span>1 - 20 / 23</span>
                 <div className="flex gap-2">
                   <button className="px-2 py-1 hover:bg-gray-200 rounded">‹</button>
@@ -853,7 +861,7 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           </div>
 
           {/* NOMBRE CONVENIO/ OBJETO Section - Table Format */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-8">
             <div className="bg-[#f59e0b] text-white px-4 py-3 font-bold">
               NOMBRE CONVENIO/ OBJETO
             </div>
@@ -863,15 +871,15 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
                   {currentConvenios.map((convenio, index) => (
                     <tr 
                       key={index}
-                      className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+                      className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700'}
                     >
-                      <td className="px-4 py-2 text-xs">{convenio}</td>
+                      <td className="px-4 py-2 text-xs dark:text-gray-300">{convenio}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+            <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 flex justify-between items-center text-sm dark:text-gray-300">
               <span>{conveniosStartIndex + 1} - {Math.min(conveniosEndIndex, CONVENIOS_DATA.length)} / {CONVENIOS_DATA.length}</span>
               <div className="flex gap-2">
                 <button 
@@ -895,8 +903,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
           {/* ESTADO INDIVIDUAL and DURACIÓN Section */}
           <div className="grid grid-cols-2 gap-6 mb-8">
             {/* ESTADO INDIVIDUAL */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">ESTADO INDIVIDUAL</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white mb-4 text-lg">ESTADO INDIVIDUAL</h3>
               <div className="flex justify-center">
                 <div className="bg-purple-900 text-white px-12 py-4 rounded-lg font-bold text-xl w-full text-center border-2 border-purple-900">
                   LIQUIDADO
@@ -905,8 +913,8 @@ export default function DashboardPage({ params }: { params: Promise<{ centerSlug
             </div>
 
             {/* DURACIÓN */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-center font-bold text-gray-800 mb-4 text-lg">DURACIÓN</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <h3 className="text-center font-bold text-gray-800 dark:text-white mb-4 text-lg">DURACIÓN</h3>
               <div className="flex justify-center">
                 <div className="bg-[#f59e0b] text-white px-12 py-4 rounded-lg font-bold text-xl w-full text-center border-2 border-[#f59e0b]">
                   3 MESES

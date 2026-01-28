@@ -402,8 +402,8 @@ export default function CargarFichaPage() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 transition-shadow hover:shadow-lg">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-4 flex items-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 transition-shadow hover:shadow-lg">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 border-b dark:border-gray-700 pb-4 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mr-3 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
           </svg>
@@ -441,16 +441,16 @@ export default function CargarFichaPage() {
               
               {file ? (
                 <div>
-                  <p className="text-lg font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                  <p className="mt-4 text-sm text-amber-600">Haga clic para cambiar el archivo</p>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white">{file.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">Haga clic para cambiar el archivo</p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-lg font-medium text-gray-900">Arrastre y suelte su archivo Excel aquí</p>
-                  <p className="text-sm text-gray-500 mt-1">- o -</p>
-                  <p className="mt-2 text-sm text-amber-600 font-medium">Haga clic para seleccionar un archivo</p>
-                  <p className="mt-4 text-xs text-gray-400">Formatos soportados: .xlsx, .xls</p>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white">Arrastre y suelte su archivo Excel aquí</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">- o -</p>
+                  <p className="mt-2 text-sm text-amber-600 dark:text-amber-400 font-medium">Haga clic para seleccionar un archivo</p>
+                  <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">Formatos soportados: .xlsx, .xls</p>
                 </div>
               )}
             </label>
@@ -509,9 +509,9 @@ export default function CargarFichaPage() {
       
       {/* Vista previa de datos */}
       {previewData && (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1zm-5 8.274l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L5 10.274zm10 0l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L15 10.274z" clipRule="evenodd" />
               </svg>
@@ -521,7 +521,7 @@ export default function CargarFichaPage() {
             <div className="flex space-x-2">
               <button 
                 onClick={() => setShowExportOptions(!showExportOptions)}
-                className="px-3 py-2 rounded-md text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center"
+                className="px-3 py-2 rounded-md text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -531,7 +531,7 @@ export default function CargarFichaPage() {
               
               <button
                 onClick={() => setChartView(!chartView)}
-                className={`px-3 py-2 rounded-md text-sm ${chartView ? 'bg-amber-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} flex items-center`}
+                className={`px-3 py-2 rounded-md text-sm ${chartView ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'} flex items-center`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
@@ -544,10 +544,10 @@ export default function CargarFichaPage() {
           
           {/* Panel de exportación */}
           {showExportOptions && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-between">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
                 <p className="font-medium">Exportar datos procesados</p>
-                <p className="text-xs text-gray-500">Seleccione el formato de exportación</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Seleccione el formato de exportación</p>
               </div>
               <div className="flex space-x-2">
                 <button 
@@ -577,20 +577,20 @@ export default function CargarFichaPage() {
                 placeholder="Filtrar contenido..."
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
             
             {/* Pestañas de hojas */}
-            <div className="flex overflow-x-auto gap-1 p-1 bg-gray-100 rounded-md">
+            <div className="flex overflow-x-auto gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-md">
               {previewData.map((sheet, index) => (
                 <button
                   key={`sheet-${index}`}
                   onClick={() => setActiveSheetIndex(index)}
                   className={`px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap ${
                     activeSheetIndex === index
-                      ? 'bg-white text-amber-600 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-200'
+                      ? 'bg-white dark:bg-gray-600 text-amber-600 dark:text-amber-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {sheet.title}
@@ -603,10 +603,10 @@ export default function CargarFichaPage() {
           {previewData && activeSheetIndex < previewData.length && (
             <div>
               {chartView ? (
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[400px]">
-                  <h3 className="text-lg font-medium text-center mb-4">Visualización de Datos</h3>
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[400px]">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-4">Visualización de Datos</h3>
                   
-                  <div className="flex justify-center items-center h-80 text-gray-500">
+                  <div className="flex justify-center items-center h-80 text-gray-500 dark:text-gray-400">
                     <p>Gráficos de datos disponibles próximamente</p>
                   </div>
                 </div>
@@ -615,7 +615,7 @@ export default function CargarFichaPage() {
                   {/* Mostrar secciones filtradas */}
                   {Array.from(getFilteredSections()).map(([sectionName, items]) => (
                     <div key={sectionName} className="mb-8">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 pb-2 border-b dark:border-gray-700">
                         {sectionName}
                       </h3>
                       
@@ -626,9 +626,9 @@ export default function CargarFichaPage() {
                             if (item.isTitle) return null;
                             
                             return (
-                              <div key={`${item.key}-${index}`} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <p className="text-sm font-medium text-gray-500">{item.label}</p>
-                                <p className="text-base font-medium mt-1">{formatValue(item.value)}</p>
+                              <div key={`${item.key}-${index}`} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</p>
+                                <p className="text-base font-medium text-gray-900 dark:text-white mt-1">{formatValue(item.value)}</p>
                               </div>
                             );
                           })}
@@ -638,7 +638,7 @@ export default function CargarFichaPage() {
                   ))}
                   
                   {Array.from(getFilteredSections()).length === 0 && (
-                    <div className="p-6 text-center text-gray-500 border border-gray-200 rounded-lg">
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg">
                       {filterText ? 
                         'No se encontraron resultados para su búsqueda.' : 
                         'No hay datos disponibles en esta hoja.'

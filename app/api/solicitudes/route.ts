@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
     const centerId = searchParams.get('center_id')
     const priority = searchParams.get('priority')
     const search = searchParams.get('search')
+    const userOnly = searchParams.get('user_only') === 'true'
+    const noCenter = searchParams.get('no_center') === 'true'
+    const externalOnly = searchParams.get('external_only') === 'true'
+    const tipoSolicitud = searchParams.get('tipo_solicitud')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
@@ -88,8 +92,28 @@ export async function GET(request: NextRequest) {
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
 
+    // Si se solicita solo solicitudes externas (dirigidas a un centro pero creadas por usuarios externos)
+    if (externalOnly && centerId) {
+      // Obtener usuarios que pertenecen al centro
+      const { data: centerUsers } = await supabase
+        .from('user_centers')
+        .select('user_id')
+        .eq('center_id', centerId)
+      
+      const centerUserIds = centerUsers?.map(uc => uc.user_id) || []
+      
+      // Filtrar solicitudes del centro que NO fueron creadas por usuarios del centro
+      query = query.eq('center_id', centerId)
+      if (centerUserIds.length > 0) {
+        query = query.not('created_by', 'in', `(${centerUserIds.join(',')})`)
+      }
+    }
+    // Si se solicita solo solicitudes del usuario sin centro
+    else if (userOnly && noCenter) {
+      query = query.eq('created_by', user.id).is('center_id', null)
+    }
     // Aplicar filtros según el rol
-    if (roleName === 'funcionario') {
+    else if (roleName === 'funcionario' || userOnly) {
       // Funcionarios solo ven sus propias solicitudes
       query = query.eq('created_by', user.id)
     } else if (roleName === 'director' || roleName === 'administrador') {
@@ -127,6 +151,10 @@ export async function GET(request: NextRequest) {
 
     if (priority) {
       query = query.eq('priority', priority)
+    }
+
+    if (tipoSolicitud) {
+      query = query.eq('tipo_solicitud', tipoSolicitud)
     }
 
     if (search) {
@@ -194,14 +222,19 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     const tipoSolicitud = formData.get('tipo_solicitud') as string
-    const centerId = formData.get('center_id') as string
+    const centerIdRaw = formData.get('center_id') as string | null
+    // Normalizar centerId: tratar cadenas vacías como null
+    const centerId = centerIdRaw && centerIdRaw.trim() !== '' ? centerIdRaw : null
     const metodoFichaTecnica = formData.get('metodo_ficha_tecnica') as string
     const excelDataStr = formData.get('excel_data') as string
+    const titulo = formData.get('titulo') as string
+    const descripcion = formData.get('descripcion') as string
+    const prioridad = formData.get('prioridad') as string
     
     // Validaciones básicas
-    if (!tipoSolicitud || !centerId) {
+    if (!tipoSolicitud) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: tipo_solicitud, center_id' },
+        { error: 'Falta campo requerido: tipo_solicitud' },
         { status: 400 }
       )
     }
@@ -215,19 +248,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar acceso al centro
-    const { data: userCenter } = await supabase
-      .from('user_centers')
-      .select('center_id')
-      .eq('user_id', user.id)
-      .eq('center_id', centerId)
-      .single()
+    // Verificar que el centro existe (si se proporciona center_id)
+    // Ya no verificamos si el usuario tiene acceso, permitimos que cualquier usuario
+    // pueda enviar solicitudes a cualquier centro
+    if (centerId) {
+      const { data: centerExists } = await supabase
+        .from('centers')
+        .select('id')
+        .eq('id', centerId)
+        .single()
 
-    if (!userCenter) {
-      return NextResponse.json(
-        { error: 'No tienes acceso a este centro' },
-        { status: 403 }
-      )
+      if (!centerExists) {
+        return NextResponse.json(
+          { error: 'El centro especificado no existe' },
+          { status: 404 }
+        )
+      }
     }
 
     // Parsear datos del Excel si existen
@@ -254,39 +290,42 @@ export async function POST(request: NextRequest) {
 
     // Si no hay nombre de proyecto, generar uno por defecto
     if (!nombreProyecto) {
-      nombreProyecto = `Proyecto_${tipoSolicitud}_${Date.now()}`
+      nombreProyecto = titulo || `Proyecto_${tipoSolicitud}_${Date.now()}`
     }
 
-    // Buscar director del centro
-    const { data: directorData } = await supabase
-      .from('user_centers')
-      .select(`
-        user_id,
-        profiles!inner (
-          id,
-          full_name
-        )
-      `)
-      .eq('center_id', centerId)
-      .limit(1)
+    // Buscar director del centro (solo si hay centro)
+    let directorId = null
+    if (centerId) {
+      const { data: directorData } = await supabase
+        .from('user_centers')
+        .select(`
+          user_id,
+          profiles!inner (
+            id,
+            full_name
+          )
+        `)
+        .eq('center_id', centerId)
+        .limit(1)
 
-    const directorId = directorData && directorData.length > 0 
-      ? (directorData[0] as any).user_id 
-      : null
+      directorId = directorData && directorData.length > 0
+        ? (directorData[0] as any).user_id
+        : null
+    }
 
     // Crear solicitud en BD
     const { data: solicitud, error: solicitudError } = await supabase
       .from('solicitudes')
       .insert({
         created_by: user.id,
-        center_id: centerId,
+        center_id: centerId || null,
         director_id: directorId,
         tipo_solicitud: tipoSolicitud,
         nombre_proyecto: nombreProyecto,
         status: 'nuevo',
-        title: `Solicitud ${tipoSolicitud} - ${nombreProyecto}`,
-        description: `Solicitud de tipo ${tipoSolicitud}`,
-        priority: 'normal'
+        title: titulo || `Solicitud ${tipoSolicitud} - ${nombreProyecto}`,
+        description: descripcion || `Solicitud de tipo ${tipoSolicitud}`,
+        priority: prioridad || 'normal'
       })
       .select('id')
       .single()
@@ -440,7 +479,64 @@ export async function POST(request: NextRequest) {
       .eq('id', solicitudId)
       .single()
 
-    // TODO: Enviar notificación al director
+    // Enviar notificaciones a los grupos de notificación
+    try {
+      // Buscar grupos de tipo "notificacion" del centro (si hay centro) o globales
+      let notificationGroupsQuery = supabase
+        .from('user_groups')
+        .select('id, nombre, user_group_members(user_id)')
+        .eq('tipo', 'notificacion')
+        .eq('activo', true)
+
+      if (centerId) {
+        // Buscar grupos del centro específico
+        notificationGroupsQuery = notificationGroupsQuery.eq('centro_id', centerId)
+      } else {
+        // Buscar grupos globales (sin centro asignado)
+        notificationGroupsQuery = notificationGroupsQuery.is('centro_id', null)
+      }
+
+      const { data: notificationGroups } = await notificationGroupsQuery
+
+      if (notificationGroups && notificationGroups.length > 0) {
+        // Recopilar todos los user_ids únicos de los grupos
+        const userIds = new Set<string>()
+        notificationGroups.forEach(group => {
+          if (group.user_group_members) {
+            group.user_group_members.forEach((member: any) => {
+              userIds.add(member.user_id)
+            })
+          }
+        })
+
+        // Crear notificaciones para cada usuario
+        const notifications = Array.from(userIds).map(userId => ({
+          user_id: userId,
+          title: 'Nueva Solicitud Creada',
+          message: `Se ha creado una nueva solicitud: ${nombreProyecto}`,
+          type: 'info',
+          link: centerId
+            ? `/center/${solicitudCompleta?.center?.slug}/solicitudes/${solicitudId}`
+            : `/solicitudes/${solicitudId}`,
+          read: false
+        }))
+
+        if (notifications.length > 0) {
+          const { error: notifError } = await supabase
+            .from('notifications')
+            .insert(notifications)
+
+          if (notifError) {
+            console.error('[API] Error creando notificaciones:', notifError)
+          } else {
+            console.log(`[API] ${notifications.length} notificaciones creadas exitosamente`)
+          }
+        }
+      }
+    } catch (notifError) {
+      console.error('[API] Error en sistema de notificaciones:', notifError)
+      // No fallar la creación de solicitud si falla la notificación
+    }
 
     return NextResponse.json({
       message: 'Solicitud creada exitosamente',

@@ -4,30 +4,22 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCenterContext } from '@/components/providers/CenterContext';
 import EstadoBadge, { EstadoSolicitud } from '@/components/solicitudes/EstadoBadge';
-import { Plus, Search, Filter, FileText } from 'lucide-react';
+import { Search, Filter, FileText } from 'lucide-react';
 
 interface Solicitud {
   id: string;
-  tipo: string;
-  metodo_ficha_tecnica: string;
-  estado: EstadoSolicitud;
+  tipo_solicitud: string;
+  status: EstadoSolicitud;
+  nombre_proyecto?: string;
   observaciones?: string;
   created_at: string;
-  funcionario: {
+  created_by_profile: {
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
-  };
-  director?: {
-    email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
+    full_name?: string;
   };
 }
 
-export default function SolicitudesPage({
+export default function SolicitudesExternasPage({
   params
 }: {
   params: Promise<{ centerSlug: string }>
@@ -44,31 +36,34 @@ export default function SolicitudesPage({
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (currentCenter) {
-      loadSolicitudes();
-    }
-  }, [currentCenter, selectedEstado, selectedTipo]);
+    loadSolicitudesExternas();
+  }, [selectedEstado, selectedTipo]);
 
-  async function loadSolicitudes() {
-    if (!currentCenter) return;
-    
+  async function loadSolicitudesExternas() {
     try {
       setLoading(true);
       setError('');
 
-      let url = `/api/solicitudes?center_id=${currentCenter.id}`;
+      if (!currentCenter) {
+        setError('No se pudo determinar el centro actual');
+        setLoading(false);
+        return;
+      }
+
+      // Cargar solicitudes externas (dirigidas a este centro pero creadas por usuarios externos)
+      let url = `/api/solicitudes?center_id=${currentCenter.id}&external_only=true`;
       if (selectedEstado !== 'all') {
-        url += `&estado=${selectedEstado}`;
+        url += `&status=${selectedEstado}`;
       }
       if (selectedTipo !== 'all') {
-        url += `&tipo=${selectedTipo}`;
+        url += `&tipo_solicitud=${selectedTipo}`;
       }
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cargar solicitudes');
+        throw new Error(data.error || 'Error al cargar solicitudes externas');
       }
 
       setSolicitudes(data.solicitudes || []);
@@ -106,13 +101,14 @@ export default function SolicitudesPage({
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
-    const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                              solicitud.funcionario?.email || '';
+    const funcionarioNombre = solicitud.created_by_profile?.full_name ||
+                              solicitud.created_by_profile?.email || '';
     
     return (
       solicitud.id.toLowerCase().includes(searchLower) ||
       funcionarioNombre.toLowerCase().includes(searchLower) ||
-      getTipoLabel(solicitud.tipo).toLowerCase().includes(searchLower)
+      (solicitud.nombre_proyecto && solicitud.nombre_proyecto.toLowerCase().includes(searchLower)) ||
+      getTipoLabel(solicitud.tipo_solicitud).toLowerCase().includes(searchLower)
     );
   });
 
@@ -146,7 +142,6 @@ export default function SolicitudesPage({
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
           </div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
         </div>
 
         {/* Filtros Skeleton */}
@@ -173,18 +168,11 @@ export default function SolicitudesPage({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Solicitudes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Solicitudes Externas</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Gestiona las solicitudes de {currentCenter?.name}
+            Solicitudes creadas por usuarios sin centro asignado
           </p>
         </div>
-        <button
-          onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/create`)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-        >
-          <Plus className="w-5 h-5" />
-          Nueva Solicitud
-        </button>
       </div>
 
       {/* Filtros y Búsqueda */}
@@ -255,36 +243,27 @@ export default function SolicitudesPage({
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {solicitudes.length === 0 ? 'No hay solicitudes' : 'No se encontraron resultados'}
+            {solicitudes.length === 0 ? 'No hay solicitudes externas' : 'No se encontraron resultados'}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {solicitudes.length === 0
-              ? 'Crea tu primera solicitud para comenzar'
+            {solicitudes.length === 0 
+              ? 'Las solicitudes de usuarios sin centro aparecerán aquí'
               : 'Intenta ajustar los filtros de búsqueda'
             }
           </p>
-          {solicitudes.length === 0 && (
-            <button
-              onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/create`)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Nueva Solicitud
-            </button>
-          )}
         </div>
       ) : (
         <div className="grid gap-4">
           {filteredSolicitudes.map((solicitud) => {
-            const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                                     solicitud.funcionario?.email || 
+            const funcionarioNombre = solicitud.created_by_profile?.full_name ||
+                                     solicitud.created_by_profile?.email ||
                                      'Desconocido';
 
             return (
               <div
                 key={solicitud.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 dark:hover:border-blue-600"
-                onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/${solicitud.id}`)}
+                onClick={() => router.push(`/solicitudes/${solicitud.id}`)}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
@@ -293,8 +272,11 @@ export default function SolicitudesPage({
                         #{solicitud.id.slice(0, 8)}
                       </span>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {getTipoLabel(solicitud.tipo)}
+                        {solicitud.nombre_proyecto || getTipoLabel(solicitud.tipo_solicitud)}
                       </h3>
+                      <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full">
+                        Externa
+                      </span>
                     </div>
                     {solicitud.observaciones && (
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
@@ -303,15 +285,15 @@ export default function SolicitudesPage({
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <EstadoBadge estado={solicitud.estado} />
+                    <EstadoBadge estado={solicitud.status} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t dark:border-gray-700 text-sm">
                   <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Método:</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400 capitalize">
-                      {solicitud.metodo_ficha_tecnica}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Tipo:</span>{' '}
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {getTipoLabel(solicitud.tipo_solicitud)}
                     </span>
                   </div>
                   <div>

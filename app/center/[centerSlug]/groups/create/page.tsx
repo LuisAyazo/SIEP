@@ -1,26 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Plus, X } from "lucide-react";
 
-type TipoGrupo = 'comite' | 'equipo' | 'notificacion' | 'personalizado';
+interface GroupType {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+}
 
 export default function CreateGroupPage() {
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
-    tipo: "equipo" as TipoGrupo,
+    tipo: "",
     activo: true
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [groupTypes, setGroupTypes] = useState<GroupType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showNewTypeModal, setShowNewTypeModal] = useState(false);
+  const [newType, setNewType] = useState({ nombre: "", descripcion: "" });
+  const [creatingType, setCreatingType] = useState(false);
   
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
   const centerSlug = params.centerSlug as string;
+
+  // Cargar tipos de grupo y verificar si es admin
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Verificar si es administrador
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userRoles } = await supabase
+            .from('user_roles')
+            .select('roles!inner(name)')
+            .eq('user_id', user.id);
+          
+          const roles = userRoles?.map((ur: any) => ur.roles?.name) || [];
+          setIsAdmin(roles.includes('administrador'));
+        }
+
+        // Cargar tipos de grupo
+        const { data, error } = await supabase
+          .from('group_types')
+          .select('*')
+          .eq('activo', true)
+          .order('nombre');
+
+        if (error) throw error;
+        setGroupTypes(data || []);
+        
+        // Seleccionar el primer tipo por defecto
+        if (data && data.length > 0) {
+          setFormData(prev => ({ ...prev, tipo: data[0].nombre }));
+        }
+      } catch (err) {
+        console.error('Error cargando tipos:', err);
+      } finally {
+        setLoadingTypes(false);
+      }
+    }
+
+    loadData();
+  }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +113,69 @@ export default function CreateGroupPage() {
     }
   };
 
+  const handleCreateNewType = async () => {
+    if (!newType.nombre.trim()) {
+      alert('El nombre del tipo es requerido');
+      return;
+    }
+
+    setCreatingType(true);
+    try {
+      const { data, error } = await supabase
+        .from('group_types')
+        .insert({
+          nombre: newType.nombre.trim(),
+          descripcion: newType.descripcion.trim() || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Agregar el nuevo tipo a la lista
+      setGroupTypes(prev => [...prev, data]);
+      
+      // Seleccionar el nuevo tipo
+      setFormData(prev => ({ ...prev, tipo: data.nombre }));
+      
+      // Cerrar modal y limpiar
+      setShowNewTypeModal(false);
+      setNewType({ nombre: "", descripcion: "" });
+    } catch (err: any) {
+      console.error('Error creando tipo:', err);
+      alert('Error al crear tipo: ' + err.message);
+    } finally {
+      setCreatingType(false);
+    }
+  };
+
+  const handleDeleteType = async (typeId: string, typeName: string) => {
+    if (!confirm(`¿Estás seguro de eliminar el tipo "${typeName}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('group_types')
+        .update({ activo: false })
+        .eq('id', typeId);
+
+      if (error) throw error;
+
+      // Remover de la lista
+      setGroupTypes(prev => prev.filter(t => t.id !== typeId));
+      
+      // Si era el tipo seleccionado, cambiar al primero disponible
+      if (formData.tipo === typeName && groupTypes.length > 1) {
+        const remaining = groupTypes.filter(t => t.id !== typeId);
+        setFormData(prev => ({ ...prev, tipo: remaining[0]?.nombre || "" }));
+      }
+    } catch (err: any) {
+      console.error('Error eliminando tipo:', err);
+      alert('Error al eliminar tipo: ' + err.message);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -69,6 +183,8 @@ export default function CreateGroupPage() {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
   };
+
+  const selectedTypeDescription = groupTypes.find(t => t.nombre === formData.tipo)?.descripcion;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -118,28 +234,68 @@ export default function CreateGroupPage() {
 
           {/* Tipo */}
           <div>
-            <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tipo de Grupo <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="tipo"
-              name="tipo"
-              required
-              value={formData.tipo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="comite">Comité</option>
-              <option value="equipo">Equipo</option>
-              <option value="notificacion">Lista de Notificación</option>
-              <option value="personalizado">Personalizado</option>
-            </select>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {formData.tipo === 'comite' && 'Grupo para evaluación de solicitudes y toma de decisiones'}
-              {formData.tipo === 'equipo' && 'Grupo de trabajo colaborativo'}
-              {formData.tipo === 'notificacion' && 'Lista para envío de notificaciones masivas'}
-              {formData.tipo === 'personalizado' && 'Grupo con propósito personalizado'}
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tipo de Grupo <span className="text-red-500">*</span>
+              </label>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewTypeModal(true)}
+                  className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nuevo Tipo
+                </button>
+              )}
+            </div>
+            
+            {loadingTypes ? (
+              <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                Cargando tipos...
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <select
+                    id="tipo"
+                    name="tipo"
+                    required
+                    value={formData.tipo}
+                    onChange={handleChange}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    {groupTypes.map(type => (
+                      <option key={type.id} value={type.nombre}>
+                        {type.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {isAdmin && formData.tipo && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const typeToDelete = groupTypes.find(t => t.nombre === formData.tipo);
+                        if (typeToDelete) {
+                          handleDeleteType(typeToDelete.id, typeToDelete.nombre);
+                        }
+                      }}
+                      className="px-3 py-2 border border-red-300 dark:border-red-600 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Eliminar tipo"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {selectedTypeDescription && (
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {selectedTypeDescription}
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           {/* Descripción */}
@@ -184,7 +340,7 @@ export default function CreateGroupPage() {
           </Link>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || loadingTypes}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creando...' : 'Crear Grupo'}
@@ -209,11 +365,74 @@ export default function CreateGroupPage() {
                 <li>Después de crear el grupo, podrás agregar miembros</li>
                 <li>Los grupos de tipo "Comité" se usan para evaluar solicitudes</li>
                 <li>Los grupos inactivos no aparecerán en las listas de selección</li>
+                {isAdmin && <li className="font-medium">Como administrador, puedes crear y eliminar tipos de grupo</li>}
               </ul>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal para crear nuevo tipo */}
+      {showNewTypeModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Crear Nuevo Tipo de Grupo
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nombre del Tipo <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newType.nombre}
+                    onChange={(e) => setNewType(prev => ({ ...prev, nombre: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Ej: Notificaciones de Solicitudes"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={newType.descripcion}
+                    onChange={(e) => setNewType(prev => ({ ...prev, descripcion: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Describe el propósito de este tipo..."
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewTypeModal(false);
+                    setNewType({ nombre: "", descripcion: "" });
+                  }}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateNewType}
+                  disabled={creatingType}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingType ? 'Creando...' : 'Crear Tipo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

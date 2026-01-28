@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "../components/providers/SessionProvider";
+import { CenterProvider } from "../components/providers/CenterContext";
 
 // Reemplazamos Geist con Inter para mayor compatibilidad
 const inter = Inter({
@@ -33,7 +34,9 @@ export default function RootLayout({
         className={`${inter.variable} ${robotoMono.variable} antialiased`}
       >
         <SessionProvider>
-          {children}
+          <CenterProvider>
+            {children}
+          </CenterProvider>
         </SessionProvider>
       </body>
     </html>

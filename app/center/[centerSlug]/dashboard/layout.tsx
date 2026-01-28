@@ -12,6 +12,8 @@ import { hasGranularPermission, GRANULAR_PERMISSIONS, type GranularPermission } 
 import CenterSelector from "@/components/CenterSelector";
 import { CenterProvider } from "@/components/providers/CenterContext";
 import NotificationPanel from "@/components/NotificationPanel";
+import LoadingScreen from "@/components/LoadingScreen";
+import { Moon, Sun } from "lucide-react";
 
 // Define types for navigation items
 interface SubItem {
@@ -66,6 +68,7 @@ export default function DashboardLayout({
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   // Obtener el rol desde la base de datos
   useEffect(() => {
@@ -97,6 +100,36 @@ export default function DashboardLayout({
     fetchUserRole();
   }, [session?.user?.id, supabase]);
 
+  // Cargar tema desde localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // Función para alternar el tema
+  const toggleDarkMode = () => {
+    console.log('[DashboardLayout] 🌓 Toggle dark mode clicked');
+    console.log('[DashboardLayout] Current darkMode state:', darkMode);
+    const newMode = !darkMode;
+    console.log('[DashboardLayout] New darkMode state:', newMode);
+    setDarkMode(newMode);
+    if (newMode) {
+      console.log('[DashboardLayout] ✅ Activando modo oscuro');
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      console.log('[DashboardLayout] HTML classList:', document.documentElement.classList.toString());
+    } else {
+      console.log('[DashboardLayout] ☀️ Activando modo claro');
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      console.log('[DashboardLayout] HTML classList:', document.documentElement.classList.toString());
+    }
+    console.log('[DashboardLayout] localStorage theme:', localStorage.getItem('theme'));
+  };
+
   // Redirigir si no está autenticado
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -105,7 +138,7 @@ export default function DashboardLayout({
   }, [status, router]);
 
   // Obtener datos del usuario autenticado
-  const userName = (session?.user as any)?.user_metadata?.name || (session?.user as any)?.name || session?.user?.email?.split('@')[0] || null;
+  const userName = (session?.user as any)?.user_metadata?.name || (session?.user as any)?.user_metadata?.full_name || (session?.user as any)?.name || session?.user?.email?.split('@')[0] || null;
   const userEmail = session?.user?.email || null;
   
   console.log('[DashboardLayout] Datos de sesión:', {
@@ -345,7 +378,7 @@ export default function DashboardLayout({
         },
         {
           name: "Modificaciones",
-          href: `/center/${centerSlug}/history`,
+          href: `/center/${centerSlug}/modificaciones`,
           icon: (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -429,7 +462,30 @@ export default function DashboardLayout({
           />
         </svg>
       ),
-      items: []
+      items: [
+        {
+          name: "Solicitudes Externas",
+          href: `/center/${centerSlug}/solicitudes/externas`,
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
+              />
+            </svg>
+          ),
+          adminOnly: false,
+          granularPermission: GRANULAR_PERMISSIONS.SOLICITUDES_READ
+        }
+      ]
     },
     financial: {
       name: "Financiero",
@@ -584,6 +640,11 @@ export default function DashboardLayout({
   
   console.log('[DashboardLayout] Secciones finales:', Object.keys(filteredNavigationSections));
 
+  // Mostrar loader mientras se carga la autenticación o el rol
+  if (status === "loading" || (session && userRole === null)) {
+    return <LoadingScreen message="Cargando configuración..." />;
+  }
+
   // Render sections only if they have visible items
   return (
     <CenterProvider>
@@ -593,37 +654,52 @@ export default function DashboardLayout({
         <div className="px-4 py-3 flex items-center justify-between">
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/dashboard" className="flex items-center gap-3">
               <Image
                 src="/images/logo-universidad-transparente.png"
                 alt="Logo Universidad"
-                width={40}
-                height={40}
-                className="rounded-sm border border-gray-200 dark:border-gray-600"
+                width={48}
+                height={48}
+                className="rounded-sm border border-gray-200 dark:border-gray-600 dark:invert"
               />
-              <span className="ml-2 text-lg font-medium">
+              <span className="text-xl font-semibold text-gray-900 dark:text-white">
                 SIEP
               </span>
             </Link>
           </div>
 
           {/* Right side of header with user info */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleDarkMode}
+              className="h-12 w-12 flex items-center justify-center rounded-lg bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm"
+              title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            >
+              {darkMode ? (
+                <Sun className="w-5 h-5 text-yellow-500" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              )}
+            </button>
+
             {/* Notification Panel */}
-            <NotificationPanel />
+            <div className="h-12 flex items-center justify-center px-3 rounded-lg bg-gray-100/50 dark:bg-gray-700/50 backdrop-blur-sm">
+              <NotificationPanel />
+            </div>
             
             {/* User info */}
             <div className="relative group">
-              <button className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 p-1">
-                <span className="hidden md:block mr-2 text-right">
-                  <span className="block font-medium">
+              <button className="h-12 flex items-center gap-3 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm">
+                <span className="hidden md:block text-right">
+                  <span className="block text-sm font-medium text-gray-900 dark:text-white">
                     {userName || "Usuario"}
                   </span>
                   <span className="block text-xs text-gray-500 dark:text-gray-400">
                     {userRole || "Rol no definido"}
                   </span>
                 </span>
-                <div className="w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white">
+                <div className="w-9 h-9 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white shadow-sm font-medium">
                   {userName ? userName.charAt(0).toUpperCase() : "U"}
                 </div>
               </button>
@@ -806,13 +882,7 @@ export default function DashboardLayout({
 
         {/* Main content */}
         <main className="flex-grow bg-gray-50 dark:bg-gray-900 p-6 overflow-y-auto">
-          {status === "loading" ? (
-            <div className="flex h-full items-center justify-center">
-              <span className="text-gray-500">Cargando sesión...</span>
-            </div>
-          ) : (
-            children
-          )}
+          {children}
         </main>
       </div>
     </div>
