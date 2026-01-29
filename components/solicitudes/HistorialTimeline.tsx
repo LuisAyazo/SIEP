@@ -78,15 +78,17 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
       return 'Solicitud creada';
     }
 
+    // Para rechazos, mostrar "Rechazada por [rol] [nombre]"
+    if (item.estado_nuevo === 'rechazado') {
+      return `Rechazada por ${item.user_role} ${item.user_name}`;
+    }
+
     const transiciones: Record<string, string> = {
       'nuevo_recibido': 'Recibida por el director',
       'recibido_en_comite': 'Enviada a comité',
       'en_comite_aprobado': 'Aprobada por el comité',
-      'en_comite_rechazado': 'Rechazada por el comité',
       'en_comite_observado': 'Devuelta con observaciones',
       'observado_nuevo': 'Devuelta al funcionario para correcciones',
-      'nuevo_rechazado': 'Rechazada por el director',
-      'recibido_rechazado': 'Rechazada por el director',
       'nuevo_cancelado': 'Cancelada por el creador',
       'recibido_cancelado': 'Cancelada por el creador',
       'en_comite_cancelado': 'Cancelada por el creador',
@@ -116,8 +118,6 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de la Solicitud</h3>
-      
       <div className="relative">
         {/* Línea vertical */}
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
@@ -140,14 +140,18 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
                   {/* Header */}
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <h4 className={`text-sm font-semibold ${item.estado_nuevo === 'rechazado' ? 'text-white dark:text-white' : 'text-gray-900 dark:text-white'}`}>
                         {getAccionDescripcion(item)}
                       </h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {formatDate(item.created_at)}
                       </p>
                     </div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color.replace('bg-', 'bg-opacity-10 text-')}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      item.estado_nuevo === 'rechazado'
+                        ? 'bg-red-600 text-white'
+                        : config.color.replace('bg-', 'bg-opacity-10 text-')
+                    }`}>
                       {config.label}
                     </span>
                   </div>

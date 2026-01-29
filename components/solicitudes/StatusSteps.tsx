@@ -11,6 +11,7 @@ interface HistorialEntry {
 interface StatusStepsProps {
   currentStatus: string;
   historial?: HistorialEntry[];
+  compact?: boolean;
 }
 
 const BASE_STATUS_FLOW = [
@@ -40,7 +41,7 @@ const BASE_STATUS_FLOW = [
   }
 ];
 
-export default function StatusSteps({ currentStatus, historial = [] }: StatusStepsProps) {
+export default function StatusSteps({ currentStatus, historial = [], compact = false }: StatusStepsProps) {
   const isRejectedOrCancelled = ['rechazado', 'cancelado'].includes(currentStatus);
   
   // Determinar el último estado válido antes del rechazo/cancelación
@@ -120,20 +121,22 @@ export default function StatusSteps({ currentStatus, historial = [] }: StatusSte
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-        Seguimiento de Solicitud
-      </h2>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${compact ? 'p-4' : 'p-6'}`}>
+      {!compact && (
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+          Seguimiento de Solicitud
+        </h2>
+      )}
 
       <div className="relative">
         {/* Línea de progreso */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" 
-             style={{ left: '2rem', right: '2rem' }} />
-        <div 
-          className="absolute top-5 left-0 h-0.5 bg-blue-600 dark:bg-blue-500 transition-all duration-500"
-          style={{ 
-            left: '2rem',
-            width: `calc(${(currentStepIndex / (STATUS_FLOW.length - 1)) * 100}% - 2rem)`
+        <div className={`absolute ${compact ? 'top-3' : 'top-5'} left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700`}
+             style={{ left: compact ? '1rem' : '2rem', right: compact ? '1rem' : '2rem' }} />
+        <div
+          className={`absolute ${compact ? 'top-3' : 'top-5'} left-0 h-0.5 bg-blue-600 dark:bg-blue-500 transition-all duration-500`}
+          style={{
+            left: compact ? '1rem' : '2rem',
+            width: `calc(${(currentStepIndex / (STATUS_FLOW.length - 1)) * 100}% - ${compact ? '1rem' : '2rem'})`
           }}
         />
 
@@ -168,7 +171,7 @@ export default function StatusSteps({ currentStatus, historial = [] }: StatusSte
                 {/* Círculo del step */}
                 <div
                   className={`
-                    w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300
+                    ${compact ? 'w-6 h-6' : 'w-10 h-10'} rounded-full flex items-center justify-center z-10 transition-all duration-300
                     ${isCompleted
                       ? 'bg-blue-600 dark:bg-blue-500 text-white'
                       : isFailedAtThisStep
@@ -181,22 +184,36 @@ export default function StatusSteps({ currentStatus, historial = [] }: StatusSte
                     }
                   `}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={compact ? 'w-3 h-3' : 'w-5 h-5'} />
                 </div>
 
                 {/* Label y descripción */}
-                <div className="mt-3 text-center max-w-[120px]">
-                  <p className={`text-sm font-medium ${
-                    isCompleted || isCurrent
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                    {stepLabel}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {stepDescription}
-                  </p>
-                </div>
+                {!compact && (
+                  <div className="mt-3 text-center max-w-[120px]">
+                    <p className={`text-sm font-medium ${
+                      isCompleted || isCurrent
+                        ? 'text-gray-900 dark:text-white'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {stepLabel}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {stepDescription}
+                    </p>
+                  </div>
+                )}
+                
+                {compact && (
+                  <div className="mt-1 text-center">
+                    <p className={`text-xs font-medium ${
+                      isCompleted || isCurrent
+                        ? 'text-gray-900 dark:text-white'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {stepLabel}
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -204,7 +221,8 @@ export default function StatusSteps({ currentStatus, historial = [] }: StatusSte
       </div>
 
       {/* Mensaje adicional según el estado */}
-      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+      {!compact && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
         {currentStatus === 'nuevo' && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
@@ -247,7 +265,8 @@ export default function StatusSteps({ currentStatus, historial = [] }: StatusSte
             </p>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

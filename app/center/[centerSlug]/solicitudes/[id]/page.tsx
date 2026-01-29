@@ -7,6 +7,7 @@ import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import EstadoBadge from '@/components/solicitudes/EstadoBadge';
 import DocumentosList from '@/components/solicitudes/DocumentosList';
 import HistorialTimeline, { HistorialItem } from '@/components/solicitudes/HistorialTimeline';
+import StatusSteps from '@/components/solicitudes/StatusSteps';
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -18,12 +19,21 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
+interface HistorialEntry {
+  id: string;
+  estado_anterior: string;
+  estado_nuevo: string;
+  comentario?: string;
+  created_at: string;
+}
+
 interface Solicitud {
   id: string;
   tipo_solicitud: string;
   nombre_proyecto?: string;
   status: 'nuevo' | 'recibido' | 'en_comite' | 'observado' | 'aprobado' | 'rechazado' | 'cancelado';
   observaciones?: string;
+  motivo_rechazo?: string;
   created_at: string;
   created_by_profile?: {
     id: string;
@@ -66,6 +76,7 @@ export default function SolicitudDetallePage() {
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
+  const [historialSteps, setHistorialSteps] = useState<HistorialEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [comentario, setComentario] = useState('');
@@ -85,6 +96,7 @@ export default function SolicitudDetallePage() {
     loadSolicitud();
     loadDocumentos();
     loadHistorial();
+    loadHistorialSteps();
   }, [solicitudId]);
 
   const loadSolicitud = async () => {
@@ -125,6 +137,22 @@ export default function SolicitudDetallePage() {
     } catch (error) {
       console.error('Error:', error);
       setHistorial([]); // Establecer array vacío si hay error
+    }
+  };
+
+  const loadHistorialSteps = async () => {
+    try {
+      const response = await fetch(`/api/solicitudes/${solicitudId}/historial`);
+      if (!response.ok) {
+        console.error('Error al cargar historial:', response.status);
+        setHistorialSteps([]);
+        return;
+      }
+      const data = await response.json();
+      setHistorialSteps(data.historial || []);
+    } catch (error) {
+      console.error('Error:', error);
+      setHistorialSteps([]);
     }
   };
 
@@ -454,6 +482,15 @@ export default function SolicitudDetallePage() {
           </div>
         </div>
 
+        {/* Status Steps - Compact Mode */}
+        <div className="mb-6">
+          <StatusSteps
+            currentStatus={solicitud.status}
+            historial={historialSteps}
+            compact={true}
+          />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Columna Principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -507,6 +544,17 @@ export default function SolicitudDetallePage() {
                   </h3>
                   <p className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">
                     {solicitud.observaciones}
+                  </p>
+                </div>
+              )}
+
+              {solicitud.status === 'rechazado' && solicitud.motivo_rechazo && (
+                <div className="mt-4 pt-4 border-t dark:border-gray-600">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">
+                    Motivo del Rechazo:
+                  </p>
+                  <p className="text-sm text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                    {solicitud.motivo_rechazo}
                   </p>
                 </div>
               )}
@@ -568,9 +616,9 @@ export default function SolicitudDetallePage() {
                       onClick={handleRechazar}
                       disabled={actionLoading}
                       className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                      title="Rechazar solicitud"
                     >
-                      <XCircleIcon className="h-5 w-5 mr-2" />
-                      Rechazar
+                      <XCircleIcon className="h-5 w-5" />
                     </button>
                   </>
                 )}
@@ -591,9 +639,9 @@ export default function SolicitudDetallePage() {
                       onClick={handleRechazar}
                       disabled={actionLoading}
                       className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                      title="Rechazar solicitud"
                     >
-                      <XCircleIcon className="h-5 w-5 mr-2" />
-                      Rechazar
+                      <XCircleIcon className="h-5 w-5" />
                     </button>
                   </>
                 )}
@@ -635,9 +683,9 @@ export default function SolicitudDetallePage() {
                       onClick={handleRechazar}
                       disabled={actionLoading}
                       className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                      title="Rechazar solicitud"
                     >
-                      <XCircleIcon className="h-5 w-5 mr-2" />
-                      Rechazar
+                      <XCircleIcon className="h-5 w-5" />
                     </button>
                   </>
                 )}
