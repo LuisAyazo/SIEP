@@ -184,9 +184,34 @@ export default function SolicitudesLayout({
       </header>
 
       {/* Main content */}
-      <main className="min-h-[calc(100vh-73px)]">
+      <main className="flex-1">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-600 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/images/logo-universidad-transparente.png"
+                alt="Logo Universidad de Cartagena"
+                width={40}
+                height={40}
+                className="dark:invert"
+              />
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="font-semibold text-gray-900 dark:text-white">Universidad de Cartagena</p>
+                <p>Sistema Integrado de Extensión y Proyección</p>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center md:text-right">
+              <p>© {new Date().getFullYear()} Universidad de Cartagena</p>
+              <p>Todos los derechos reservados</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

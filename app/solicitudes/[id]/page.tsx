@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import EstadoBadge from '@/components/solicitudes/EstadoBadge';
 import DocumentosList from '@/components/solicitudes/DocumentosList';
+import StatusSteps from '@/components/solicitudes/StatusSteps';
 import { ArrowLeft, X } from 'lucide-react';
 import Image from 'next/image';
 
@@ -196,6 +197,9 @@ export default function SolicitudDetallePage({
       </button>
 
       <div className="space-y-6">
+        {/* Status Steps - Seguimiento de la solicitud */}
+        <StatusSteps currentStatus={solicitud.status} />
+
         {/* Header de Solicitud */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6">
           <div className="flex justify-between items-start mb-4">
@@ -251,16 +255,6 @@ export default function SolicitudDetallePage({
               <p className="text-sm text-gray-600 dark:text-gray-400">{solicitud.observaciones}</p>
             </div>
           )}
-
-          <div className="mt-4 pt-4 border-t dark:border-slate-600">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado Actual</p>
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                Tu solicitud ha sido enviada al centro correspondiente.
-                Recibirás notificaciones sobre cualquier actualización en el estado de tu solicitud.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Documentos Adjuntos */}

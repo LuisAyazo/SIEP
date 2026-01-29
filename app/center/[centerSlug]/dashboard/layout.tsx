@@ -396,7 +396,7 @@ export default function DashboardLayout({
         }] : []),
         {
           name: userRole === 'funcionario' ? "Mis Solicitudes" : "Solicitudes",
-          href: userRole === 'funcionario' ? `/solicitudes` : `/center/${centerSlug}/solicitudes`,
+          href: `/center/${centerSlug}/solicitudes`,
           icon: (
             <svg
               xmlns="http://www.w3.org/2000/svg"

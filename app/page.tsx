@@ -63,23 +63,23 @@ export default function Home() {
 
   // Toggle tema oscuro/claro
   const toggleDarkMode = () => {
-    console.log('[HomePage] 🌓 Toggle dark mode clicked');
-    console.log('[HomePage] Current darkMode state:', darkMode);
+    // console.log('[HomePage] 🌓 Toggle dark mode clicked');
+    // console.log('[HomePage] Current darkMode state:', darkMode);
     const newMode = !darkMode;
-    console.log('[HomePage] New darkMode state:', newMode);
+    // console.log('[HomePage] New darkMode state:', newMode);
     setDarkMode(newMode);
     if (newMode) {
-      console.log('[HomePage] ✅ Activando modo oscuro');
+      // console.log('[HomePage] ✅ Activando modo oscuro');
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
-      console.log('[HomePage] HTML classList:', document.documentElement.classList.toString());
+      // console.log('[HomePage] HTML classList:', document.documentElement.classList.toString());
     } else {
-      console.log('[HomePage] ☀️ Activando modo claro');
+      // console.log('[HomePage] ☀️ Activando modo claro');
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
-      console.log('[HomePage] HTML classList:', document.documentElement.classList.toString());
+      // console.log('[HomePage] HTML classList:', document.documentElement.classList.toString());
     }
-    console.log('[HomePage] localStorage theme:', localStorage.getItem('theme'));
+    // console.log('[HomePage] localStorage theme:', localStorage.getItem('theme'));
   };
 
   // Función para cerrar sesión
@@ -89,30 +89,30 @@ export default function Home() {
   };
 
   useEffect(() => {
-    console.log('[HomePage] Estado:', {
-      authLoading,
-      centersLoading,
-      hasSession: !!session,
-      availableCentersCount: availableCenters.length,
-      showNoCenterView,
-      hasRedirected
-    });
+    // console.log('[HomePage] Estado:', {
+    //   authLoading,
+    //   centersLoading,
+    //   hasSession: !!session,
+    //   availableCentersCount: availableCenters.length,
+    //   showNoCenterView,
+    //   hasRedirected
+    // });
 
     // 🔥 PREVENIR LOOP: Si ya redirigimos, no hacer nada más
     if (hasRedirected) {
-      console.log('[HomePage] ⏭️ Ya se redirigió, saltando...');
+      // console.log('[HomePage] ⏭️ Ya se redirigió, saltando...');
       return;
     }
 
     // Esperar a que termine de cargar la autenticación
     if (authLoading) {
-      console.log('[HomePage] Esperando autenticación...');
+      // console.log('[HomePage] Esperando autenticación...');
       return;
     }
 
     // Si no hay sesión, redirigir a login inmediatamente
     if (!session) {
-      console.log('[HomePage] No hay sesión, redirigiendo a login');
+      // console.log('[HomePage] No hay sesión, redirigiendo a login');
       setHasRedirected(true);
       router.replace('/login');
       return;
@@ -120,13 +120,13 @@ export default function Home() {
 
     // Si hay sesión pero aún están cargando los centros, esperar
     if (centersLoading) {
-      console.log('[HomePage] Esperando centros...');
+      // console.log('[HomePage] Esperando centros...');
       return;
     }
 
     // Si hay centros disponibles, redirigir al dashboard del centro INMEDIATAMENTE
     if (availableCenters.length > 0) {
-      console.log('[HomePage] Hay centros, redirigiendo al dashboard');
+      // console.log('[HomePage] Hay centros, redirigiendo al dashboard');
       const centerToUse = currentCenter || availableCenters[0];
       const slug = centerToUse.slug || centerToUse.name.toLowerCase().replace(/ /g, '-');
       
@@ -141,7 +141,7 @@ export default function Home() {
       return; // Importante: salir inmediatamente
     } else {
       // No hay centros asignados, mostrar vista especial
-      console.log('[HomePage] No hay centros, mostrando vista especial');
+      // console.log('[HomePage] No hay centros, mostrando vista especial');
       setShowNoCenterView(true);
     }
   }, [availableCenters, currentCenter, router, session, authLoading, centersLoading, hasRedirected]);
@@ -156,13 +156,13 @@ export default function Home() {
   }
 
   // 🔥 Si hay centros disponibles, SIEMPRE mostrar loader (nunca la vista sin centros)
-  if (availableCenters.length > 0 && !hasRedirected) {
+  if (availableCenters.length > 0) {
     return <LoadingScreen message="Redirigiendo al dashboard..." />;
   }
 
-  // Si no está cargando pero tampoco debe mostrar la vista sin centros, mostrar cargando
-  // (esto ocurre durante la redirección)
-  if (!showNoCenterView && availableCenters.length === 0) {
+  // Si no hay centros pero aún no se ha determinado que debe mostrar la vista sin centros
+  // mostrar loader (esto previene el flash de contenido)
+  if (!showNoCenterView) {
     return <LoadingScreen message="Preparando interfaz..." />;
   }
 

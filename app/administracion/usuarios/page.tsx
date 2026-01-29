@@ -19,6 +19,12 @@ interface User {
   centers?: Array<{ id: string; name: string; slug: string }>;
 }
 
+interface Center {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 // Role descriptions
 const roleDescriptions = {
   administrador: { title: 'Administrador', color: 'amber' },
@@ -39,6 +45,12 @@ export default function UsuariosAdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  
+  // Modal states
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [availableCenters, setAvailableCenters] = useState<Center[]>([]);
+  const [selectedCenters, setSelectedCenters] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -48,6 +60,7 @@ export default function UsuariosAdminPage() {
       try {
         const supabase = createClient();
         
+        // Fetch users
         const { data: usersData, error: usersError } = await supabase
           .from('profiles')
           .select(`
@@ -70,6 +83,16 @@ export default function UsuariosAdminPage() {
           `);
 
         if (usersError) throw usersError;
+
+        // Fetch all centers
+        const { data: centersData, error: centersError } = await supabase
+          .from('centers')
+          .select('id, name, slug')
+          .order('name');
+
+        if (centersError) throw centersError;
+
+        setAvailableCenters(centersData || []);
 
         const transformedUsers = usersData?.map((user: any) => {
           const roles = user.user_roles?.map((ur: any) => ur.roles?.name).filter(Boolean) || [];
@@ -105,6 +128,68 @@ export default function UsuariosAdminPage() {
 
     fetchUsers();
   }, []);
+
+  const handleOpenEditCenters = (user: User) => {
+    setEditingUserId(user.id);
+    setSelectedCenters(user.centers?.map(c => c.id) || []);
+  };
+
+  const handleToggleCenter = (centerId: string) => {
+    setSelectedCenters(prev =>
+      prev.includes(centerId)
+        ? prev.filter(id => id !== centerId)
+        : [...prev, centerId]
+    );
+  };
+
+  const handleSaveCenters = async () => {
+    if (!editingUserId) return;
+
+    setIsSaving(true);
+    try {
+      const supabase = createClient();
+
+      // Delete existing assignments
+      await supabase
+        .from('user_centers')
+        .delete()
+        .eq('user_id', editingUserId);
+
+      // Insert new assignments
+      if (selectedCenters.length > 0) {
+        const assignments = selectedCenters.map(centerId => ({
+          user_id: editingUserId,
+          center_id: centerId
+        }));
+
+        const { error: insertError } = await supabase
+          .from('user_centers')
+          .insert(assignments);
+
+        if (insertError) throw insertError;
+      }
+
+      // Update local state
+      setUsers(prev => prev.map(user => {
+        if (user.id === editingUserId) {
+          return {
+            ...user,
+            centers: availableCenters.filter(c => selectedCenters.includes(c.id))
+          };
+        }
+        return user;
+      }));
+
+      setEditingUserId(null);
+      setSelectedCenters([]);
+      setError('');
+    } catch (err: any) {
+      console.error('Error al actualizar centros:', err);
+      setError('Error al actualizar los centros: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDeleteUser = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
@@ -268,16 +353,27 @@ export default function UsuariosAdminPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {user.centers && user.centers.length > 0 ? (
+                        <div className="flex items-center justify-center gap-2">
+                          {user.centers && user.centers.length > 0 ? (
+                            <button
+                              onClick={() => setSelectedUser(selectedUser === user.id ? null : user.id)}
+                              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              {user.centers.length}
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-400">0</span>
+                          )}
                           <button
-                            onClick={() => setSelectedUser(selectedUser === user.id ? null : user.id)}
-                            className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            onClick={() => handleOpenEditCenters(user)}
+                            className="p-1 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                            title="Editar centros"
                           >
-                            {user.centers.length}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
                           </button>
-                        ) : (
-                          <span className="text-sm text-gray-400">0</span>
-                        )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -350,6 +446,82 @@ export default function UsuariosAdminPage() {
             </table>
           )}
         </div>
+
+        {/* Edit Centers Modal */}
+        <AnimatePresence>
+          {editingUserId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+              >
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Editar Centros Asignados
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {users.find(u => u.id === editingUserId)?.full_name}
+                  </p>
+                </div>
+
+                <div className="p-6 overflow-y-auto max-h-[calc(80vh-180px)]">
+                  <div className="space-y-2">
+                    {availableCenters.map((center) => (
+                      <label
+                        key={center.id}
+                        className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedCenters.includes(center.id)}
+                          onChange={() => handleToggleCenter(center.id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        />
+                        <span className="ml-3 text-sm text-gray-900 dark:text-white">
+                          {center.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {availableCenters.length === 0 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                      No hay centros disponibles
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setEditingUserId(null);
+                      setSelectedCenters([]);
+                    }}
+                    disabled={isSaving}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveCenters}
+                    disabled={isSaving}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isSaving && (
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </PermissionGuard>
   );
