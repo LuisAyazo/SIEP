@@ -328,7 +328,7 @@ export default function SolicitudDetallePage() {
       const response = await fetch(`/api/solicitudes/${solicitudId}/rechazar`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ motivo: comentario })
+        body: JSON.stringify({ motivo_rechazo: comentario })
       });
 
       if (!response.ok) {

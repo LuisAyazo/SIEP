@@ -2,11 +2,18 @@
 
 import { Check, X, Clock, FileText, Users, CheckCircle } from 'lucide-react';
 
-interface StatusStepsProps {
-  currentStatus: string;
+interface HistorialEntry {
+  estado_anterior: string | null;
+  estado_nuevo: string;
+  created_at: string;
 }
 
-const STATUS_FLOW = [
+interface StatusStepsProps {
+  currentStatus: string;
+  historial?: HistorialEntry[];
+}
+
+const BASE_STATUS_FLOW = [
   {
     key: 'nuevo',
     label: 'Solicitud Creada',
@@ -33,26 +40,61 @@ const STATUS_FLOW = [
   }
 ];
 
-export default function StatusSteps({ currentStatus }: StatusStepsProps) {
-  // Determinar el índice del estado actual
-  const getCurrentStepIndex = () => {
-    switch (currentStatus) {
-      case 'nuevo':
-        return 0;
-      case 'recibido':
-        return 1;
-      case 'en_comite':
-        return 2;
-      case 'aprobado':
-      case 'rechazado':
-      case 'cancelado':
-        return 3;
-      default:
-        return 0;
+export default function StatusSteps({ currentStatus, historial = [] }: StatusStepsProps) {
+  const isRejectedOrCancelled = ['rechazado', 'cancelado'].includes(currentStatus);
+  
+  // Determinar el último estado válido antes del rechazo/cancelación
+  const getLastValidState = (): string => {
+    if (!isRejectedOrCancelled || !historial || historial.length === 0) {
+      return currentStatus;
     }
+    
+    // Buscar el último estado antes de rechazado/cancelado
+    const validStates = ['nuevo', 'recibido', 'en_comite'];
+    for (let i = historial.length - 1; i >= 0; i--) {
+      if (validStates.includes(historial[i].estado_nuevo)) {
+        return historial[i].estado_nuevo;
+      }
+    }
+    
+    // Si no encontramos ninguno, asumir que al menos fue creado
+    return 'nuevo';
   };
-
-  const currentStepIndex = getCurrentStepIndex();
+  
+  const lastValidState = getLastValidState();
+  
+  // Construir el flujo de estados dinámicamente
+  // Si está rechazado/cancelado, insertar un paso adicional después del último estado válido
+  const STATUS_FLOW = isRejectedOrCancelled
+    ? (() => {
+        const lastStateIndex = BASE_STATUS_FLOW.findIndex(s => s.key === lastValidState);
+        const flow = [...BASE_STATUS_FLOW];
+        
+        // Insertar paso de rechazo/cancelación después del último estado válido
+        flow.splice(lastStateIndex + 1, 0, {
+          key: currentStatus,
+          label: currentStatus === 'rechazado' ? 'Rechazada' : 'Cancelada',
+          description: currentStatus === 'rechazado'
+            ? 'Tu solicitud fue rechazada'
+            : 'Tu solicitud fue cancelada',
+          icon: X
+        });
+        
+        return flow;
+      })()
+    : BASE_STATUS_FLOW;
+  
+  // Determinar el índice del paso actual
+  const currentStepIndex = (() => {
+    if (isRejectedOrCancelled) {
+      // Encontrar el índice del paso de rechazo/cancelación en el flujo dinámico
+      return STATUS_FLOW.findIndex(s => s.key === currentStatus);
+    }
+    
+    // Para estados normales
+    return STATUS_FLOW.findIndex(s => s.key === currentStatus);
+  })();
+  
   const isFinalStatus = ['aprobado', 'rechazado', 'cancelado'].includes(currentStatus);
 
   // Determinar el color del estado final
@@ -98,14 +140,26 @@ export default function StatusSteps({ currentStatus }: StatusStepsProps) {
         {/* Steps */}
         <div className="relative flex justify-between">
           {STATUS_FLOW.map((step, index) => {
+            // Los pasos completados son los anteriores al actual
             const isCompleted = index < currentStepIndex;
             const isCurrent = index === currentStepIndex;
-            const Icon = index === 3 && isFinalStatus ? getFinalStatusIcon() : step.icon;
+            
+            // Si es rechazado/cancelado, el paso actual muestra error, los anteriores éxito
+            const isFailedAtThisStep = isRejectedOrCancelled && isCurrent;
+            
+            const Icon = isFailedAtThisStep
+              ? X
+              : isCompleted
+                ? Check
+              : index === 3 && isFinalStatus && currentStatus === 'aprobado'
+                ? Check
+                : step.icon;
+            
             const finalColor = getFinalStatusColor();
 
-            // Para el último step, usar el estado final si aplica
-            const stepLabel = index === 3 && isFinalStatus ? getFinalStatusLabel() : step.label;
-            const stepDescription = index === 3 && isFinalStatus 
+            // Para el último step, usar el estado final si aplica (solo para aprobado)
+            const stepLabel = index === 3 && currentStatus === 'aprobado' ? getFinalStatusLabel() : step.label;
+            const stepDescription = index === 3 && currentStatus === 'aprobado'
               ? `Tu solicitud ha sido ${getFinalStatusLabel().toLowerCase()}`
               : step.description;
 
@@ -115,14 +169,12 @@ export default function StatusSteps({ currentStatus }: StatusStepsProps) {
                 <div
                   className={`
                     w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300
-                    ${isCompleted 
-                      ? 'bg-blue-600 dark:bg-blue-500 text-white' 
-                      : isCurrent && index === 3 && isFinalStatus
-                        ? finalColor === 'green' 
-                          ? 'bg-green-600 dark:bg-green-500 text-white ring-4 ring-green-100 dark:ring-green-900/30'
-                          : finalColor === 'red'
-                            ? 'bg-red-600 dark:bg-red-500 text-white ring-4 ring-red-100 dark:ring-red-900/30'
-                            : 'bg-gray-600 dark:bg-gray-500 text-white ring-4 ring-gray-100 dark:ring-gray-900/30'
+                    ${isCompleted
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                      : isFailedAtThisStep
+                        ? 'bg-red-600 dark:bg-red-500 text-white ring-4 ring-red-100 dark:ring-red-900/30'
+                      : isCurrent && index === 3 && currentStatus === 'aprobado'
+                        ? 'bg-green-600 dark:bg-green-500 text-white ring-4 ring-green-100 dark:ring-green-900/30'
                       : isCurrent
                         ? 'bg-blue-600 dark:bg-blue-500 text-white ring-4 ring-blue-100 dark:ring-blue-900/30'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
@@ -135,8 +187,8 @@ export default function StatusSteps({ currentStatus }: StatusStepsProps) {
                 {/* Label y descripción */}
                 <div className="mt-3 text-center max-w-[120px]">
                   <p className={`text-sm font-medium ${
-                    isCompleted || isCurrent 
-                      ? 'text-gray-900 dark:text-white' 
+                    isCompleted || isCurrent
+                      ? 'text-gray-900 dark:text-white'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}>
                     {stepLabel}

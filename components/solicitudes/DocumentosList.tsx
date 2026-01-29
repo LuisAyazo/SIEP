@@ -33,7 +33,7 @@ export default function DocumentosList({
     if (!documentosProp) {
       loadDocumentos();
     }
-  }, [solicitudId, documentosProp]);
+  }, [solicitudId]); // Removido documentosProp de las dependencias
 
   async function loadDocumentos() {
     try {

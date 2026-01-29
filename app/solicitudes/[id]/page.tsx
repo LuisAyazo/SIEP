@@ -9,12 +9,19 @@ import StatusSteps from '@/components/solicitudes/StatusSteps';
 import { ArrowLeft, X } from 'lucide-react';
 import Image from 'next/image';
 
+interface HistorialEntry {
+  estado_anterior: string | null;
+  estado_nuevo: string;
+  created_at: string;
+}
+
 interface Solicitud {
   id: string;
   tipo_solicitud: string;
   status: string;
   nombre_proyecto?: string;
   observaciones?: string;
+  motivo_rechazo?: string;
   created_at: string;
   title?: string;
   description?: string;
@@ -40,6 +47,7 @@ export default function SolicitudDetallePage({
   const { session, loading: authLoading } = useSupabaseSession();
   
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
+  const [historial, setHistorial] = useState<HistorialEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,8 +61,9 @@ export default function SolicitudDetallePage({
   useEffect(() => {
     if (session && resolvedParams.id) {
       loadSolicitud();
+      loadHistorial();
     }
-  }, [session, resolvedParams.id]);
+  }, [session?.user?.id, resolvedParams.id]); // Solo cuando cambia el user ID o el ID de solicitud
 
   async function loadSolicitud() {
     try {
@@ -74,6 +83,20 @@ export default function SolicitudDetallePage({
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadHistorial() {
+    try {
+      const response = await fetch(`/api/solicitudes/${resolvedParams.id}/historial`);
+      const data = await response.json();
+
+      if (response.ok && data.historial) {
+        setHistorial(data.historial);
+      }
+    } catch (err: any) {
+      console.error('Error cargando historial:', err);
+      // No mostramos error al usuario, el historial es opcional
     }
   }
 
@@ -105,33 +128,10 @@ export default function SolicitudDetallePage({
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Image
-                  src="/images/logo-oficial.png"
-                  alt="Logo Universidad"
-                  width={50}
-                  height={50}
-                  className="object-contain"
-                />
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">
-                    Sistema de Gestión
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando solicitud...</p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando solicitud...</p>
         </div>
       </div>
     );
@@ -139,39 +139,16 @@ export default function SolicitudDetallePage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Image
-                  src="/images/logo-oficial.png"
-                  alt="Logo Universidad"
-                  width={50}
-                  height={50}
-                  className="object-contain"
-                />
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">
-                    Sistema de Gestión
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg">
-            <p className="font-semibold">Error al cargar la solicitud</p>
-            <p className="text-sm mt-1">{error}</p>
-            <button
-              onClick={() => router.push('/solicitudes')}
-              className="mt-4 text-sm text-red-600 hover:text-red-800 underline"
-            >
-              ← Volver a Mis Solicitudes
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-6 py-4 rounded-lg">
+          <p className="font-semibold">Error al cargar la solicitud</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={() => router.push('/solicitudes')}
+            className="mt-4 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+          >
+            ← Volver a Mis Solicitudes
+          </button>
         </div>
       </div>
     );
@@ -198,7 +175,7 @@ export default function SolicitudDetallePage({
 
       <div className="space-y-6">
         {/* Status Steps - Seguimiento de la solicitud */}
-        <StatusSteps currentStatus={solicitud.status} />
+        <StatusSteps currentStatus={solicitud.status} historial={historial} />
 
         {/* Header de Solicitud */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6">
@@ -253,6 +230,15 @@ export default function SolicitudDetallePage({
             <div className="mt-4 pt-4 border-t dark:border-slate-600">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones:</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">{solicitud.observaciones}</p>
+            </div>
+          )}
+
+          {solicitud.status === 'rechazado' && solicitud.motivo_rechazo && (
+            <div className="mt-4 pt-4 border-t dark:border-slate-600">
+              <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">Motivo del Rechazo:</p>
+              <p className="text-sm text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                {solicitud.motivo_rechazo}
+              </p>
             </div>
           )}
         </div>
