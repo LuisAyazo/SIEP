@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import Image from "next/image";
@@ -70,6 +70,7 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Obtener el rol desde la base de datos
   useEffect(() => {
@@ -137,6 +138,22 @@ export default function DashboardLayout({
       router.push("/login");
     }
   }, [status, router]);
+
+  // Cerrar menú de usuario al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showUserMenu]);
 
   // Obtener datos del usuario autenticado
   const userName = (session?.user as any)?.user_metadata?.name || (session?.user as any)?.user_metadata?.full_name || (session?.user as any)?.name || session?.user?.email?.split('@')[0] || null;
@@ -646,7 +663,7 @@ export default function DashboardLayout({
             </div>
             
             {/* User info */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="h-12 flex items-center gap-3 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm"
@@ -679,7 +696,8 @@ export default function DashboardLayout({
                     </div>
                     <Link
                       href="/administracion/usuarios"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -690,7 +708,8 @@ export default function DashboardLayout({
                     </Link>
                     <Link
                       href="/administracion/roles"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -701,7 +720,8 @@ export default function DashboardLayout({
                     </Link>
                     <Link
                       href="/administracion/grupos"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -712,7 +732,8 @@ export default function DashboardLayout({
                     </Link>
                     <Link
                       href="/administracion/configuracion"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 cursor-pointer"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -727,7 +748,7 @@ export default function DashboardLayout({
                 
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium mt-1 cursor-pointer"
+                  className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium mt-1 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">

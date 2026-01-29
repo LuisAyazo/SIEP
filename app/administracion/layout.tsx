@@ -1,6 +1,6 @@
-"use client";
+ "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSupabaseSession } from "@/components/providers/SessionProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import NotificationPanel from "@/components/NotificationPanel";
 import { Moon, Sun } from "lucide-react";
+import { useCenterContext } from "@/components/providers/CenterContext";
 
 export default function AdministracionLayout({
   children,
@@ -18,10 +19,12 @@ export default function AdministracionLayout({
   const { session, loading } = useSupabaseSession();
   const router = useRouter();
   const pathname = usePathname();
+  const { currentCenter } = useCenterContext();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -68,6 +71,22 @@ export default function AdministracionLayout({
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  // Cerrar menú de usuario al hacer click afuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showUserMenu]);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
@@ -142,7 +161,7 @@ export default function AdministracionLayout({
             </div>
             
             {/* User menu */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="h-12 flex items-center gap-3 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm"
@@ -240,6 +259,20 @@ export default function AdministracionLayout({
         <div className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 w-64 flex-shrink-0">
           <nav className="flex flex-col h-full overflow-y-auto py-4 px-3">
             <div className="space-y-1">
+              {/* Botón para volver al centro */}
+              <Link
+                href={currentCenter ? `/center/${currentCenter.slug}/dashboard` : "/"}
+                className="flex items-center px-3 py-2 mb-4 text-sm rounded-md text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                <span className="font-medium">
+                  {currentCenter ? `Volver a ${currentCenter.name}` : "Volver al Dashboard"}
+                </span>
+              </Link>
+
+              {/* Menú de administración */}
               {menuItems.map((item) => (
                 <Link
                   key={item.href}

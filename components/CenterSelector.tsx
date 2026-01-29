@@ -13,7 +13,7 @@ const CenterSelector: React.FC = () => {
   // Sincronizar el estado local con el currentCenter del contexto
   useEffect(() => {
     if (currentCenter) {
-      console.log("CenterSelector: Actualizando centro mostrado a:", currentCenter.name);
+      // console.log("CenterSelector: Actualizando centro mostrado a:", currentCenter.name);
       setDisplayedCenter(currentCenter);
       setLocalLoading(false);
     }
@@ -22,21 +22,21 @@ const CenterSelector: React.FC = () => {
   // Force loading state to false after a reasonable timeout to prevent stuck states
   useEffect(() => {
     if (loading) {
-      console.log("CenterSelector: Cargando centros...");
+      // console.log("CenterSelector: Cargando centros...");
       const timer = setTimeout(() => {
         setLocalLoading(false);
-        console.log("CenterSelector: Tiempo de carga agotado, forzando estado a 'no cargando'");
+        // console.log("CenterSelector: Tiempo de carga agotado, forzando estado a 'no cargando'");
       }, 3000);
       return () => clearTimeout(timer);
     } else {
       setLocalLoading(false);
-      if (currentCenter) {
-        console.log("CenterSelector: Centros cargados correctamente");
-        console.log("CenterSelector: Estado actual - ", {
-          currentCenter: currentCenter?.name || 'ninguno',
-          availableCenters: availableCenters.map(c => c.name)
-        });
-      }
+      // if (currentCenter) {
+      //   console.log("CenterSelector: Centros cargados correctamente");
+      //   console.log("CenterSelector: Estado actual - ", {
+      //     currentCenter: currentCenter?.name || 'ninguno',
+      //     availableCenters: availableCenters.map(c => c.name)
+      //   });
+      // }
     }
   }, [loading, currentCenter, availableCenters]);
 
@@ -72,7 +72,7 @@ const CenterSelector: React.FC = () => {
         newPath += '/dashboard';
       }
       
-      console.log(`CenterSelector: Actualizando URL a ${newPath}`);
+      // console.log(`CenterSelector: Actualizando URL a ${newPath}`);
       router.push(newPath);
     }
   }, [pathname, router]);
@@ -83,7 +83,7 @@ const CenterSelector: React.FC = () => {
     
     // Only change if selecting a different center
     if (!currentCenter || center.id !== currentCenter.id) {
-      console.log('Cambiando centro de', currentCenter?.name || 'ninguno', 'a', center.name);
+      // console.log('Cambiando centro de', currentCenter?.name || 'ninguno', 'a', center.name);
       
       // Update local state immediately for responsive UI
       setDisplayedCenter(center);

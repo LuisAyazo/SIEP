@@ -96,7 +96,7 @@ const CenterContext = createContext<CenterContextType>({
 export const useCenterContext = () => useContext(CenterContext);
 
 export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('🎯 [CenterProvider] Componente montado/renderizado');
+  // console.log('🎯 [CenterProvider] Componente montado/renderizado');
   
   const { session, loading: authLoading } = useSupabaseSession();
   const status = authLoading ? 'loading' : session ? 'authenticated' : 'unauthenticated';
@@ -113,28 +113,28 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const lastProcessedPathname = useRef<string | null>(null);
   const supabase = createClient();
   
-  console.log('🎯 [CenterProvider] Estado actual:', {
-    hasSession: !!session,
-    userId: session?.user?.id,
-    authLoading,
-    centersLoading: loading,
-    centersLoaded,
-    availableCentersCount: availableCenters.length
-  });
+  // console.log('🎯 [CenterProvider] Estado actual:', {
+  //   hasSession: !!session,
+  //   userId: session?.user?.id,
+  //   authLoading,
+  //   centersLoading: loading,
+  //   centersLoaded,
+  //   availableCentersCount: availableCenters.length
+  // });
 
   // 🔥 Cargar centros asignados al usuario desde Supabase
   useEffect(() => {
     async function loadCenters() {
-      console.log('🔄 [loadCenters] Iniciando carga de centros desde Supabase...');
-      console.log('🔄 [loadCenters] session?.user?.id:', session?.user?.id);
+      // console.log('🔄 [loadCenters] Iniciando carga de centros desde Supabase...');
+      // console.log('🔄 [loadCenters] session?.user?.id:', session?.user?.id);
       
       // Si no hay sesión, NO cargar centros
       if (!session?.user?.id) {
-        console.log('⚠️ [loadCenters] No hay sesión de usuario, no se cargan centros');
+        // console.log('⚠️ [loadCenters] No hay sesión de usuario, no se cargan centros');
         setAvailableCenters([]);
         setCentersLoaded(true);
         setLoading(false);
-        console.log('✅ [loadCenters] Estado actualizado: centersLoaded=true, loading=false');
+        // console.log('✅ [loadCenters] Estado actualizado: centersLoaded=true, loading=false');
         return;
       }
 
@@ -142,7 +142,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('selectedCenter');
-          console.log('🗑️ localStorage limpiado para forzar recarga de centros');
+          // console.log('🗑️ localStorage limpiado para forzar recarga de centros');
         }
       } catch (error) {
         console.error('Error limpiando localStorage:', error);
@@ -162,7 +162,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         if (isAdmin) {
           // Si es admin, cargar todos los centros
-          console.log('👑 Usuario es administrador, cargando todos los centros');
+          // console.log('👑 Usuario es administrador, cargando todos los centros');
           const { data, error } = await supabase
             .from('centers')
             .select('*')
@@ -172,7 +172,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           centers = data;
         } else {
           // Si no es admin, cargar solo los centros asignados
-          console.log('👤 Usuario regular, cargando centros asignados');
+          // console.log('👤 Usuario regular, cargando centros asignados');
           const { data, error } = await supabase
             .from('user_centers')
             .select('centers(*)')
@@ -183,7 +183,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         if (centers && centers.length > 0) {
-          console.log(`✅ [loadCenters] ${centers.length} centros cargados para el usuario`);
+          // console.log(`✅ [loadCenters] ${centers.length} centros cargados para el usuario`);
           
           const formattedCenters: Center[] = centers.map((center: any, index: number) => ({
             id: center.id,
@@ -195,29 +195,29 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             stats: DEFAULT_STATS
           }));
           
-          console.log('📋 [loadCenters] Centros del usuario:', formattedCenters.map(c => c.name));
+          // console.log('📋 [loadCenters] Centros del usuario:', formattedCenters.map(c => c.name));
           setAvailableCenters(formattedCenters);
         } else {
-          console.warn('⚠️ [loadCenters] Usuario no tiene centros asignados');
+          // console.warn('⚠️ [loadCenters] Usuario no tiene centros asignados');
           // Si el usuario no tiene centros asignados, dejar el array vacío
           setAvailableCenters([]);
         }
         
         // Marcar que los centros ya se cargaron
-        console.log('✅ [loadCenters] Marcando centersLoaded=true');
+        // console.log('✅ [loadCenters] Marcando centersLoaded=true');
         setCentersLoaded(true);
         setLoading(false);
       } catch (err) {
         console.error('❌ [loadCenters] Error cargando centros del usuario:', err);
         // En caso de error, dejar el array vacío
         setAvailableCenters([]);
-        console.log('✅ [loadCenters] Marcando centersLoaded=true (después de error)');
+        // console.log('✅ [loadCenters] Marcando centersLoaded=true (después de error)');
         setCentersLoaded(true);
         setLoading(false);
       }
     }
 
-    console.log('🚀 [useEffect loadCenters] Llamando a loadCenters()...');
+    // console.log('🚀 [useEffect loadCenters] Llamando a loadCenters()...');
     loadCenters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]); // Solo depender del user ID, no del objeto completo
@@ -255,14 +255,14 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const fallbackToDefaultCenter = useCallback(() => {
     // Si no hay centros disponibles, NO establecer ningún centro
     if (availableCenters.length === 0) {
-      console.log('⚠️ No hay centros disponibles, no se establece centro por defecto');
+      // console.log('⚠️ No hay centros disponibles, no se establece centro por defecto');
       return false;
     }
     
-    console.log('Estableciendo centro por defecto...');
+    // console.log('Estableciendo centro por defecto...');
     const defaultCenter = getDefaultCenter();
     if (defaultCenter) {
-      console.log('Using default center:', defaultCenter.name);
+      // console.log('Using default center:', defaultCenter.name);
       setCurrentCenter(defaultCenter);
       try {
         if (typeof window !== 'undefined') {
@@ -283,13 +283,13 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // Esperar a que los centros se hayan cargado
     if (!centersLoaded) {
-      console.log("⏳ Esperando a que se carguen los centros...");
+      // console.log("⏳ Esperando a que se carguen los centros...");
       return;
     }
     
     // Si no hay centros disponibles, marcar como inicializado y terminar
     if (availableCenters.length === 0) {
-      console.log("⏳ Usuario sin centros asignados, no se establece centro por defecto");
+      // console.log("⏳ Usuario sin centros asignados, no se establece centro por defecto");
       defaultCenterForcedRef.current = true;
       isInitialized.current = true;
       setLoading(false);
@@ -300,7 +300,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const savedCenter = getSavedCenter();
     
     if (savedCenter && !currentCenter) {
-      console.log("Restaurando centro guardado:", savedCenter.name);
+      // console.log("Restaurando centro guardado:", savedCenter.name);
       setCurrentCenter(savedCenter);
       defaultCenterForcedRef.current = true;
       isInitialized.current = true;
@@ -310,11 +310,11 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // Si no hay centro guardado, usar el predeterminado
     if (!currentCenter) {
-      console.log("Estableciendo centro por defecto al inicio...");
+      // console.log("Estableciendo centro por defecto al inicio...");
       const defaultCenter = getDefaultCenter();
       
       if (defaultCenter) {
-        console.log("Centro por defecto:", defaultCenter.name);
+        // console.log("Centro por defecto:", defaultCenter.name);
         setCurrentCenter(defaultCenter);
         try {
           if (typeof window !== 'undefined') {
@@ -334,7 +334,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Inicializar centros cuando cambia el estado de autenticación
   useEffect(() => {
-    console.log("Auth status changed:", status);
+    // console.log("Auth status changed:", status);
     
     // Limpiar cualquier timeout pendiente
     if (initTimeoutRef.current) {
@@ -344,14 +344,14 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // Si ya está inicializado, no hacer nada
     if (isInitialized.current) {
-      console.log("Already initialized");
+      // console.log("Already initialized");
       setLoading(false);
       return;
     }
     
     // Si no estamos autenticados, marcar como inicializado sin centro
     if (status === 'unauthenticated') {
-      console.log("User not authenticated");
+      // console.log("User not authenticated");
       isInitialized.current = true;
       setLoading(false);
       return;
@@ -359,21 +359,21 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // Si el estado de autenticación está cargando, esperar
     if (status === 'loading') {
-      console.log("Auth status loading...");
+      // console.log("Auth status loading...");
       setLoading(true);
       return;
     }
     
     // Si estamos autenticados pero los centros aún no se han cargado, esperar
     if (status === 'authenticated' && !centersLoaded) {
-      console.log("User authenticated, waiting for centers to load...");
+      // console.log("User authenticated, waiting for centers to load...");
       setLoading(true);
       return;
     }
     
     // Si llegamos aquí, estamos autenticados y los centros ya se cargaron
     if (status === 'authenticated' && centersLoaded) {
-      console.log("User authenticated and centers loaded, finalizing initialization...");
+      // console.log("User authenticated and centers loaded, finalizing initialization...");
       isInitialized.current = true;
       setLoading(false);
     }
@@ -383,24 +383,24 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     // Solo esperar si hay redirección en progreso o no hay pathname
     if (redirectionInProgress.current) {
-      console.log('[CenterContext] Redirección en progreso, esperando...');
+      // console.log('[CenterContext] Redirección en progreso, esperando...');
       return;
     }
     
     if (!pathname) {
-      console.log('[CenterContext] No hay pathname aún, esperando...');
+      // console.log('[CenterContext] No hay pathname aún, esperando...');
       return;
     }
     
     // 🔥 PREVENIR LOOP: No procesar el mismo pathname dos veces
     if (lastProcessedPathname.current === pathname) {
-      console.log('[CenterContext] ⏭️ Pathname ya procesado, saltando:', pathname);
+      // console.log('[CenterContext] ⏭️ Pathname ya procesado, saltando:', pathname);
       return;
     }
     
     // 🔥 IGNORAR rutas de administración - no requieren centro
     if (pathname.startsWith('/administracion')) {
-      console.log('[CenterContext] Ruta de administración detectada, ignorando...');
+      // console.log('[CenterContext] Ruta de administración detectada, ignorando...');
       lastProcessedPathname.current = pathname;
       isInitialized.current = true;
       setLoading(false);
@@ -410,13 +410,13 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (pathname.includes('/center/')) {
       // 🔥 NO redirigir si los centros aún están cargando
       if (!centersLoaded) {
-        console.log('[CenterContext] Centros aún cargando, esperando...');
+        // console.log('[CenterContext] Centros aún cargando, esperando...');
         return;
       }
       
       // Si el usuario no tiene centros Y ya terminó la carga, redirigir a la página principal
       if (availableCenters.length === 0) {
-        console.log('[CenterContext] ⚠️ Usuario sin centros en ruta de centro, redirigiendo a /');
+        // console.log('[CenterContext] ⚠️ Usuario sin centros en ruta de centro, redirigiendo a /');
         lastProcessedPathname.current = pathname;
         redirectionInProgress.current = true;
         router.replace('/');
@@ -430,22 +430,22 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const pathParts = pathname.split('/center/')[1]?.split('/') || [];
       const centerSlugInUrl = pathParts[0];
       
-      console.log('[CenterContext] Detectada ruta de centro. Slug en URL:', centerSlugInUrl);
-      console.log('[CenterContext] Centro actual:', currentCenter?.slug || 'ninguno');
-      console.log('[CenterContext] Loading state:', loading);
-      console.log('[CenterContext] Centros disponibles:', availableCenters.map(c => c.slug));
+      // console.log('[CenterContext] Detectada ruta de centro. Slug en URL:', centerSlugInUrl);
+      // console.log('[CenterContext] Centro actual:', currentCenter?.slug || 'ninguno');
+      // console.log('[CenterContext] Loading state:', loading);
+      // console.log('[CenterContext] Centros disponibles:', availableCenters.map(c => c.slug));
       
       // Verificar si el usuario tiene acceso al centro en la URL
       const matchingCenter = availableCenters.find(c => c.slug === centerSlugInUrl);
       
       if (!matchingCenter) {
         // El usuario NO tiene acceso al centro en la URL
-        console.log('[CenterContext] ⛔ Usuario no tiene acceso al centro:', centerSlugInUrl);
+        // console.log('[CenterContext] ⛔ Usuario no tiene acceso al centro:', centerSlugInUrl);
         
         // Redirigir al primer centro disponible
         const firstAvailableCenter = availableCenters[0];
         if (firstAvailableCenter) {
-          console.log('[CenterContext] 🔀 Redirigiendo a centro disponible:', firstAvailableCenter.name);
+          // console.log('[CenterContext] 🔀 Redirigiendo a centro disponible:', firstAvailableCenter.name);
           setCurrentCenter(firstAvailableCenter);
           isInitialized.current = true;
           setLoading(false);
@@ -463,7 +463,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           
           // Redirigir a la misma ruta pero con el centro correcto
           const newPath = pathname.replace(`/center/${centerSlugInUrl}`, `/center/${firstAvailableCenter.slug}`);
-          console.log('[CenterContext] Nueva ruta:', newPath);
+          // console.log('[CenterContext] Nueva ruta:', newPath);
           redirectionInProgress.current = true;
           router.push(newPath);
           
@@ -473,7 +473,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       } else if (!currentCenter || currentCenter.slug !== centerSlugInUrl) {
         // El usuario SÍ tiene acceso, establecer el centro
-        console.log('[CenterContext] ✅ Centro encontrado en URL:', matchingCenter.name);
+        // console.log('[CenterContext] ✅ Centro encontrado en URL:', matchingCenter.name);
         setCurrentCenter(matchingCenter);
         isInitialized.current = true;
         setLoading(false);
@@ -489,7 +489,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // 🔥 MARCAR pathname como procesado
         lastProcessedPathname.current = pathname;
       } else {
-        console.log('[CenterContext] ✅ Centro actual ya coincide con URL');
+        // console.log('[CenterContext] ✅ Centro actual ya coincide con URL');
         setLoading(false);
         
         // 🔥 MARCAR pathname como procesado
@@ -523,7 +523,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         
         const newPath = `/center/${pathParts.join('/')}`;
-        console.log(`URL no coincide con centro actual. Actualizando URL a: ${newPath}`);
+        // console.log(`URL no coincide con centro actual. Actualizando URL a: ${newPath}`);
         
         // 🔥 MARCAR pathname como procesado ANTES de redirigir
         lastProcessedPathname.current = pathname;
@@ -543,14 +543,14 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setCenter = useCallback((center: Center) => {
     // Prevent unnecessary state updates
     if (currentCenter && currentCenter.id === center.id) {
-      console.log('Center already selected:', center.name);
+      // console.log('Center already selected:', center.name);
       return;
     }
     
     // Find the center with latest data
     const updatedCenter = availableCenters.find(c => c.id === center.id) || center;
     
-    console.log(`Setting center to: ${updatedCenter.name} (ID: ${updatedCenter.id})`);
+    // console.log(`Setting center to: ${updatedCenter.name} (ID: ${updatedCenter.id})`);
     setCurrentCenter(updatedCenter);
     isInitialized.current = true;
     
@@ -571,7 +571,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (pathSegments.length > 2) {
         pathSegments[2] = updatedCenter.slug;
         const newPath = pathSegments.join('/');
-        console.log('Redirecting to:', newPath);
+        // console.log('Redirecting to:', newPath);
         redirectionInProgress.current = true;
         router.push(newPath);
         
@@ -582,7 +582,7 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } else {
         // If for some reason we can't determine the correct path, just go to the dashboard
         const newPath = `/center/${updatedCenter.slug}/dashboard`;
-        console.log('Redirecting to dashboard:', newPath);
+        // console.log('Redirecting to dashboard:', newPath);
         redirectionInProgress.current = true;
         router.push(newPath);
         
@@ -601,12 +601,12 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   // Debug output
   useEffect(() => {
-    console.log("CenterContext state:", {
-      currentCenter: currentCenter?.name || "null",
-      loading,
-      isInitialized: isInitialized.current,
-      authStatus: status
-    });
+    // console.log("CenterContext state:", {
+    //   currentCenter: currentCenter?.name || "null",
+    //   loading,
+    //   isInitialized: isInitialized.current,
+    //   authStatus: status
+    // });
   }, [currentCenter, loading, status]);
 
   return (

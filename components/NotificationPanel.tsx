@@ -46,7 +46,7 @@ export default function NotificationPanel() {
       loadNotifications();
       
       // Suscribirse a cambios en tiempo real
-      console.log('🔔 [NotificationPanel] Suscribiéndose a notificaciones en tiempo real');
+      // console.log('🔔 [NotificationPanel] Suscribiéndose a notificaciones en tiempo real');
       const channel = supabase
         .channel('notifications-changes')
         .on(
@@ -58,14 +58,14 @@ export default function NotificationPanel() {
             filter: `user_id=eq.${session.user.id}`
           },
           (payload) => {
-            console.log('🔔 [NotificationPanel] Cambio detectado:', payload);
+            // console.log('🔔 [NotificationPanel] Cambio detectado:', payload);
             
             if (payload.eventType === 'INSERT') {
               // Nueva notificación
               const newNotification = payload.new as Notification;
               setNotifications(prev => [newNotification, ...prev].slice(0, 10));
               setUnreadCount(prev => prev + 1);
-              console.log('✅ [NotificationPanel] Nueva notificación agregada');
+              // console.log('✅ [NotificationPanel] Nueva notificación agregada');
             } else if (payload.eventType === 'UPDATE') {
               // Notificación actualizada
               const updatedNotification = payload.new as Notification;
@@ -77,12 +77,12 @@ export default function NotificationPanel() {
                 setUnreadCount(prev.filter(n => !n.read).length);
                 return prev;
               });
-              console.log('✅ [NotificationPanel] Notificación actualizada');
+              // console.log('✅ [NotificationPanel] Notificación actualizada');
             } else if (payload.eventType === 'DELETE') {
               // Notificación eliminada
               const deletedId = payload.old.id;
               setNotifications(prev => prev.filter(n => n.id !== deletedId));
-              console.log('✅ [NotificationPanel] Notificación eliminada');
+              // console.log('✅ [NotificationPanel] Notificación eliminada');
             }
           }
         )
@@ -90,7 +90,7 @@ export default function NotificationPanel() {
 
       // Cleanup: desuscribirse al desmontar
       return () => {
-        console.log('🔔 [NotificationPanel] Desuscribiéndose de notificaciones');
+        // console.log('🔔 [NotificationPanel] Desuscribiéndose de notificaciones');
         supabase.removeChannel(channel);
       };
     }
@@ -258,7 +258,7 @@ export default function NotificationPanel() {
 
       {/* Panel de notificaciones */}
       {isOpen && (
-        <div className="fixed right-4 top-16 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-[9999] border border-gray-200 dark:border-gray-700">
+        <div className="fixed right-4 top-16 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-[99999] border border-gray-200 dark:border-gray-700">
           {/* Header del panel */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
