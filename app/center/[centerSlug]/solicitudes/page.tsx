@@ -3,27 +3,32 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCenterContext } from '@/components/providers/CenterContext';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import EstadoBadge, { EstadoSolicitud } from '@/components/solicitudes/EstadoBadge';
-import { Plus, Search, Filter, FileText } from 'lucide-react';
+import { Plus, Search, Filter, FileText, User } from 'lucide-react';
 
 interface Solicitud {
   id: string;
-  tipo: string;
-  metodo_ficha_tecnica: string;
-  estado: EstadoSolicitud;
+  tipo_solicitud: string;
+  nombre_proyecto?: string;
+  description?: string;
+  status: EstadoSolicitud;
   observaciones?: string;
   created_at: string;
-  funcionario: {
+  created_by_profile?: {
+    id: string;
+    full_name?: string;
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
   };
-  director?: {
+  center?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  assigned_to_profile?: {
+    id: string;
+    full_name?: string;
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
   };
 }
 
@@ -35,6 +40,7 @@ export default function SolicitudesPage({
   const resolvedParams = use(params);
   const router = useRouter();
   const { currentCenter } = useCenterContext();
+  const { session } = useSupabaseSession();
   
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +48,7 @@ export default function SolicitudesPage({
   const [selectedEstado, setSelectedEstado] = useState<string>('all');
   const [selectedTipo, setSelectedTipo] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'recibidas' | 'mias'>('recibidas');
 
   useEffect(() => {
     if (currentCenter) {
@@ -101,18 +108,26 @@ export default function SolicitudesPage({
     return labels[tipo] || tipo;
   }
 
+  // Separar solicitudes por tipo
+  const solicitudesRecibidas = solicitudes.filter(s => s.created_by_profile?.id !== session?.user?.id);
+  const misSolicitudes = solicitudes.filter(s => s.created_by_profile?.id === session?.user?.id);
+
+  // Filtrar solicitudes según el tab activo
+  const solicitudesDelTab = activeTab === 'recibidas' ? solicitudesRecibidas : misSolicitudes;
+
   // Filtrar solicitudes por búsqueda
-  const filteredSolicitudes = solicitudes.filter(solicitud => {
+  const filteredSolicitudes = solicitudesDelTab.filter(solicitud => {
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
-    const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                              solicitud.funcionario?.email || '';
+    const creadorNombre = solicitud.created_by_profile?.full_name ||
+                          solicitud.created_by_profile?.email || '';
     
     return (
       solicitud.id.toLowerCase().includes(searchLower) ||
-      funcionarioNombre.toLowerCase().includes(searchLower) ||
-      getTipoLabel(solicitud.tipo).toLowerCase().includes(searchLower)
+      creadorNombre.toLowerCase().includes(searchLower) ||
+      getTipoLabel(solicitud.tipo_solicitud).toLowerCase().includes(searchLower) ||
+      (solicitud.nombre_proyecto && solicitud.nombre_proyecto.toLowerCase().includes(searchLower))
     );
   });
 
@@ -187,8 +202,45 @@ export default function SolicitudesPage({
         </button>
       </div>
 
-      {/* Filtros y Búsqueda */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab('recibidas')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'recibidas'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Solicitudes Recibidas
+              {solicitudesRecibidas.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  {solicitudesRecibidas.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('mias')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'mias'
+                  ? 'border-green-500 text-green-600 dark:text-green-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Mis Solicitudes
+              {misSolicitudes.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                  {misSolicitudes.length}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+
+        {/* Filtros y Búsqueda */}
+        <div className="p-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Búsqueda */}
           <div className="flex-1">
@@ -237,9 +289,10 @@ export default function SolicitudesPage({
           </div>
         </div>
 
-        {/* Contador de resultados */}
-        <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-          {filteredSolicitudes.length} solicitud{filteredSolicitudes.length !== 1 ? 'es' : ''} encontrada{filteredSolicitudes.length !== 1 ? 's' : ''}
+          {/* Contador de resultados */}
+          <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+            {filteredSolicitudes.length} solicitud{filteredSolicitudes.length !== 1 ? 'es' : ''} encontrada{filteredSolicitudes.length !== 1 ? 's' : ''}
+          </div>
         </div>
       </div>
 
@@ -276,9 +329,9 @@ export default function SolicitudesPage({
       ) : (
         <div className="grid gap-4">
           {filteredSolicitudes.map((solicitud) => {
-            const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                                     solicitud.funcionario?.email || 
-                                     'Desconocido';
+            const creadorNombre = solicitud.created_by_profile?.full_name ||
+                                 solicitud.created_by_profile?.email ||
+                                 'Desconocido';
 
             return (
               <div
@@ -293,9 +346,19 @@ export default function SolicitudesPage({
                         #{solicitud.id.slice(0, 8)}
                       </span>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {getTipoLabel(solicitud.tipo)}
+                        {getTipoLabel(solicitud.tipo_solicitud)}
                       </h3>
                     </div>
+                    {solicitud.nombre_proyecto && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <span className="font-medium">Proyecto:</span> {solicitud.nombre_proyecto}
+                      </p>
+                    )}
+                    {solicitud.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
+                        {solicitud.description}
+                      </p>
+                    )}
                     {solicitud.observaciones && (
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
                         <span className="font-medium">Observaciones:</span> {solicitud.observaciones}
@@ -303,15 +366,15 @@ export default function SolicitudesPage({
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <EstadoBadge estado={solicitud.estado} />
+                    <EstadoBadge estado={solicitud.status} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t dark:border-gray-700 text-sm">
                   <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Método:</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400 capitalize">
-                      {solicitud.metodo_ficha_tecnica}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Centro:</span>{' '}
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {solicitud.center?.name || 'N/A'}
                     </span>
                   </div>
                   <div>
@@ -323,7 +386,7 @@ export default function SolicitudesPage({
                   <div>
                     <span className="font-medium text-gray-700 dark:text-gray-300">Por:</span>{' '}
                     <span className="text-gray-600 dark:text-gray-400">
-                      {funcionarioNombre}
+                      {creadorNombre}
                     </span>
                   </div>
                 </div>

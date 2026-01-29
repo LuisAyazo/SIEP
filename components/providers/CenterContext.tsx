@@ -398,6 +398,15 @@ export const CenterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
     
+    // 🔥 IGNORAR rutas de administración - no requieren centro
+    if (pathname.startsWith('/administracion')) {
+      console.log('[CenterContext] Ruta de administración detectada, ignorando...');
+      lastProcessedPathname.current = pathname;
+      isInitialized.current = true;
+      setLoading(false);
+      return;
+    }
+    
     if (pathname.includes('/center/')) {
       // 🔥 NO redirigir si los centros aún están cargando
       if (!centersLoaded) {

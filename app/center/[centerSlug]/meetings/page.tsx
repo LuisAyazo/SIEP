@@ -225,7 +225,7 @@ export default function MeetingsPage({
           <p className="text-gray-600 dark:text-gray-400 mt-1">Gestiona los comités del centro</p>
         </div>
         <button
-          onClick={() => router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings/create`)}
+          onClick={() => router.push(`/center/${resolvedParams.centerSlug}/meetings/create`)}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -278,7 +278,7 @@ export default function MeetingsPage({
             Crea tu primer comité para comenzar
           </p>
           <button
-            onClick={() => router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings/create`)}
+            onClick={() => router.push(`/center/${resolvedParams.centerSlug}/meetings/create`)}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 hover:scale-105"
           >
             <Plus className="w-5 h-5" />
@@ -298,7 +298,7 @@ export default function MeetingsPage({
               <div
                 key={meeting.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings/${meeting.id}`)}
+                onClick={() => router.push(`/center/${resolvedParams.centerSlug}/meetings/${meeting.id}`)}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">

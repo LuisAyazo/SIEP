@@ -1,106 +1,88 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useCenterContext } from '@/components/providers/CenterContext';
 
-// Datos simulados para mostrar el historial
-const historialMock = [
-  { 
-    id: 1, 
-    ficha_codigo: 'EXTSC-2025-001', 
-    ficha_nombre: 'Capacitación en herramientas digitales para comunidades rurales',
-    usuario: 'Ana López', 
-    accion: 'Creación', 
-    fecha: '15/04/2025 - 10:23',
-    detalles: 'Ficha creada a partir de archivo Excel'
-  },
-  { 
-    id: 2, 
-    ficha_codigo: 'EXTSC-2025-001', 
-    ficha_nombre: 'Capacitación en herramientas digitales para comunidades rurales',
-    usuario: 'Juan Pérez', 
-    accion: 'Modificación', 
-    fecha: '18/04/2025 - 14:45',
-    detalles: 'Actualización de datos financieros'
-  },
-  { 
-    id: 3, 
-    ficha_codigo: 'EXTSC-2025-002', 
-    ficha_nombre: 'Programa de educación ambiental en escuelas públicas',
-    usuario: 'María García', 
-    accion: 'Creación', 
-    fecha: '28/03/2025 - 09:17',
-    detalles: 'Ficha creada desde formulario'
-  },
-  { 
-    id: 4, 
-    ficha_codigo: 'EXTSC-2025-002', 
-    ficha_nombre: 'Programa de educación ambiental en escuelas públicas',
-    usuario: 'Carlos Sánchez', 
-    accion: 'Aprobación', 
-    fecha: '02/04/2025 - 16:30',
-    detalles: 'Aprobación por departamento académico'
-  },
-  { 
-    id: 5, 
-    ficha_codigo: 'EXTSC-2025-003', 
-    ficha_nombre: 'Asesoría técnica a microempresas locales',
-    usuario: 'Elena Martín', 
-    accion: 'Creación', 
-    fecha: '10/03/2025 - 11:08',
-    detalles: 'Ficha creada a partir de archivo Excel'
-  }
-];
+interface Modificacion {
+  id: string;
+  tipo: string;
+  accion: string;
+  descripcion: string;
+  usuario_nombre: string;
+  created_at: string;
+  metadata: any;
+}
 
-export default function HistorialFichasPage() {
-  const [historial, setHistorial] = useState(historialMock);
+export default function ModificacionesPage() {
+  const params = useParams();
+  const { currentCenter } = useCenterContext();
+  const [modificaciones, setModificaciones] = useState<Modificacion[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtroAccion, setFiltroAccion] = useState('todas');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
-  const [periodoFecha, setPeriodoFecha] = useState('todo');
   
-  // Filtrar historial basado en acción, término de búsqueda y periodo
-  const historialFiltrado = historial.filter(entrada => {
-    // Filtro por acción
-    const cumpleFiltroAccion = filtroAccion === 'todas' || entrada.accion.toLowerCase() === filtroAccion.toLowerCase();
-    
-    // Filtro por término de búsqueda (código, nombre o usuario)
-    const cumpleBusqueda = 
-      entrada.ficha_codigo.toLowerCase().includes(busqueda.toLowerCase()) || 
-      entrada.ficha_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      entrada.usuario.toLowerCase().includes(busqueda.toLowerCase());
-    
-    // Filtro por periodo (implementación básica)
-    let cumpleFiltroFecha = true;
-    if (periodoFecha === 'hoy') {
-      // Simulamos que el día actual es 5 de mayo de 2025 según el contexto
-      cumpleFiltroFecha = entrada.fecha.includes('05/05/2025');
-    } else if (periodoFecha === 'semana') {
-      // Simulamos que estamos en la primera semana de mayo 2025
-      cumpleFiltroFecha = entrada.fecha.includes('/05/2025') && parseInt(entrada.fecha.split('/')[0]) <= 7;
-    } else if (periodoFecha === 'mes') {
-      // Mayo 2025
-      cumpleFiltroFecha = entrada.fecha.includes('/05/2025');
+  useEffect(() => {
+    if (currentCenter?.id) {
+      loadModificaciones();
     }
-    
-    return cumpleFiltroAccion && cumpleBusqueda && cumpleFiltroFecha;
-  });
+  }, [currentCenter?.id]);
+
+  async function loadModificaciones() {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/modificaciones?centro_id=${currentCenter?.id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setModificaciones(data.modificaciones || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar modificaciones:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
   
-  // Función para determinar el color de badge según el tipo de acción
-  const getAccionColor = (accion: string) => {
+  const modificacionesFiltradas = modificaciones.filter(mod => {
+    const cumpleFiltroAccion = filtroAccion === 'todas' || mod.accion.toLowerCase() === filtroAccion.toLowerCase();
+    const cumpleFiltroTipo = filtroTipo === 'todos' || mod.tipo.toLowerCase() === filtroTipo.toLowerCase();
+    const cumpleBusqueda =
+      mod.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
+      mod.usuario_nombre.toLowerCase().includes(busqueda.toLowerCase());
+    
+    return cumpleFiltroAccion && cumpleFiltroTipo && cumpleBusqueda;
+  });
+
+  function formatDate(dateString: string) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  function getAccionColor(accion: string) {
     switch(accion.toLowerCase()) {
-      case 'creación':
+      case 'crear':
         return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300';
-      case 'modificación':
+      case 'editar':
+      case 'modificar':
         return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300';
-      case 'aprobación':
+      case 'aprobar':
         return 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300';
-      case 'cierre':
-        return 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300';
-      case 'cancelación':
+      case 'rechazar':
         return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300';
+      case 'cancelar':
+        return 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300';
       default:
         return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -127,27 +109,27 @@ export default function HistorialFichasPage() {
 
         <div className="flex space-x-2">
           <select
+            value={filtroTipo}
+            onChange={(e) => setFiltroTipo(e.target.value)}
+            className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white"
+          >
+            <option value="todos">Todos los tipos</option>
+            <option value="solicitud">Solicitudes</option>
+            <option value="ficha">Fichas</option>
+            <option value="documento">Documentos</option>
+          </select>
+
+          <select
             value={filtroAccion}
             onChange={(e) => setFiltroAccion(e.target.value)}
             className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white"
           >
             <option value="todas">Todas las acciones</option>
-            <option value="creación">Creación</option>
-            <option value="modificación">Modificación</option>
-            <option value="aprobación">Aprobación</option>
-            <option value="cierre">Cierre</option>
-            <option value="cancelación">Cancelación</option>
-          </select>
-          
-          <select
-            value={periodoFecha}
-            onChange={(e) => setPeriodoFecha(e.target.value)}
-            className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white"
-          >
-            <option value="todo">Todo el tiempo</option>
-            <option value="hoy">Hoy</option>
-            <option value="semana">Esta semana</option>
-            <option value="mes">Este mes</option>
+            <option value="crear">Crear</option>
+            <option value="editar">Editar</option>
+            <option value="aprobar">Aprobar</option>
+            <option value="rechazar">Rechazar</option>
+            <option value="cancelar">Cancelar</option>
           </select>
         </div>
       </div>
@@ -162,76 +144,60 @@ export default function HistorialFichasPage() {
                   Fecha y Hora
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Código Ficha
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Nombre del Proyecto
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Usuario
+                  Tipo
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Acción
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Detalles
+                  Usuario
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Descripción
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {historialFiltrado.map((entrada) => (
-                <tr key={entrada.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {entrada.fecha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {entrada.ficha_codigo}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    {entrada.ficha_nombre}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {entrada.usuario}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccionColor(entrada.accion)}`}>
-                      {entrada.accion}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {entrada.detalles}
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    Cargando modificaciones...
                   </td>
                 </tr>
-              ))}
+              ) : modificacionesFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No hay modificaciones registradas
+                  </td>
+                </tr>
+              ) : (
+                modificacionesFiltradas.map((mod) => (
+                  <tr key={mod.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(mod.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white capitalize">
+                      {mod.tipo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccionColor(mod.accion)} capitalize`}>
+                        {mod.accion}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {mod.usuario_nombre}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {mod.descripcion}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Indicador de historial vacío */}
-      {historialFiltrado.length === 0 && (
-        <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No hay registros de actividad</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            No se encontraron entradas de historial que coincidan con los criterios de búsqueda.
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                setBusqueda('');
-                setFiltroAccion('todas');
-                setPeriodoFecha('todo');
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-            >
-              Limpiar filtros
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

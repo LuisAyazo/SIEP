@@ -134,6 +134,7 @@ export async function getSignedUrl(
   expiresIn: number = 3600
 ): Promise<string | null> {
   try {
+    console.log('🔗 [Storage] Generando URL firmada para:', filePath);
     const supabase = createClient()
 
     const { data, error } = await supabase.storage
@@ -141,13 +142,14 @@ export async function getSignedUrl(
       .createSignedUrl(filePath, expiresIn)
 
     if (error) {
-      console.error('Error generando URL firmada:', error)
+      console.error('❌ [Storage] Error generando URL firmada:', error)
       return null
     }
 
+    console.log('✅ [Storage] URL firmada generada exitosamente');
     return data.signedUrl
   } catch (error) {
-    console.error('Error en getSignedUrl:', error)
+    console.error('❌ [Storage] Error en getSignedUrl:', error)
     return null
   }
 }

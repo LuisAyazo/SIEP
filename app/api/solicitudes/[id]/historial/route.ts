@@ -19,17 +19,10 @@ export async function GET(
 
     const { id: solicitudId } = await params;
 
-    // Obtener historial con información del usuario
+    // Obtener historial sin JOIN (la relación no existe en la BD)
     const { data: historial, error: historialError } = await supabase
       .from('solicitud_historial')
-      .select(`
-        *,
-        user:user_id (
-          id,
-          email,
-          raw_user_meta_data
-        )
-      `)
+      .select('*')
       .eq('solicitud_id', solicitudId)
       .order('created_at', { ascending: true });
 
@@ -42,12 +35,14 @@ export async function GET(
     }
 
     // Formatear historial para el frontend
+    // Nota: user_id existe en la tabla pero no hay relación FK,
+    // por lo que no podemos hacer JOIN. Usamos el user_id directamente.
     const formattedHistorial = (historial || []).map((item: any) => ({
       id: item.id,
       estado_anterior: item.estado_anterior,
       estado_nuevo: item.estado_nuevo,
-      user_name: item.user?.raw_user_meta_data?.full_name || item.user?.email || 'Usuario',
-      user_role: 'Usuario', // TODO: Obtener rol real
+      user_name: item.user_name || 'Usuario', // Usar el campo user_name si existe
+      user_role: 'Usuario',
       comentario: item.comentario,
       created_at: item.created_at
     }));

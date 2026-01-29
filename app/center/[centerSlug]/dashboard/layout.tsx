@@ -69,6 +69,7 @@ export default function DashboardLayout({
   const [userRole, setUserRole] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Obtener el rol desde la base de datos
   useEffect(() => {
@@ -141,12 +142,12 @@ export default function DashboardLayout({
   const userName = (session?.user as any)?.user_metadata?.name || (session?.user as any)?.user_metadata?.full_name || (session?.user as any)?.name || session?.user?.email?.split('@')[0] || null;
   const userEmail = session?.user?.email || null;
   
-  console.log('[DashboardLayout] Datos de sesión:', {
-    userRole,
-    userName,
-    userEmail,
-    userId: session?.user?.id
-  });
+  // console.log('[DashboardLayout] Datos de sesión:', {
+  //   userRole,
+  //   userName,
+  //   userEmail,
+  //   userId: session?.user?.id
+  // });
 
   // Toggle section expand/collapse
   const toggleSection = (section: string) => {
@@ -218,51 +219,6 @@ export default function DashboardLayout({
           ),
           adminOnly: false,
           granularPermission: GRANULAR_PERMISSIONS.DASHBOARD_VIEW
-        },
-        {
-          name: "Usuarios",
-          href: `/center/${centerSlug}/users`,
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-            </svg>
-          ),
-          adminOnly: false,
-          granularPermission: GRANULAR_PERMISSIONS.USERS_READ
-        },
-        {
-          name: "Roles",
-          href: `/center/${centerSlug}/roles`,
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-            </svg>
-          ),
-          adminOnly: false,
-          granularPermission: GRANULAR_PERMISSIONS.ROLES_READ
-        },
-        {
-          name: "Grupos",
-          href: `/center/${centerSlug}/groups`,
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-            </svg>
-          ),
-          adminOnly: false,
-          granularPermission: GRANULAR_PERMISSIONS.GROUPS_READ
-        },
-        {
-          name: "Configuración",
-          href: `/center/${centerSlug}/settings`,
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-          ),
-          adminOnly: false,
-          granularPermission: GRANULAR_PERMISSIONS.SETTINGS_READ
         },
         {
           name: "Fichas",
@@ -398,7 +354,8 @@ export default function DashboardLayout({
           adminOnly: false,
           granularPermission: GRANULAR_PERMISSIONS.HISTORY_READ
         },
-        {
+        // Comités - solo visible en Centro de Servicios
+        ...(centerSlug !== 'centro-educacion-continua' ? [{
           name: "Comités",
           href: `/center/${centerSlug}/meetings`,
           icon: (
@@ -419,10 +376,10 @@ export default function DashboardLayout({
           ),
           adminOnly: false,
           granularPermission: GRANULAR_PERMISSIONS.MEETINGS_READ
-        },
+        }] : []),
         {
           name: userRole === 'funcionario' ? "Mis Solicitudes" : "Solicitudes",
-          href: `/center/${centerSlug}/solicitudes`,
+          href: userRole === 'funcionario' ? `/solicitudes` : `/center/${centerSlug}/solicitudes`,
           icon: (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -464,8 +421,8 @@ export default function DashboardLayout({
       ),
       items: [
         {
-          name: "Solicitudes Externas",
-          href: `/center/${centerSlug}/solicitudes/externas`,
+          name: "Solicitudes Recibidas",
+          href: `/center/${centerSlug}/solicitudes/recibidas`,
           icon: (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -578,7 +535,7 @@ export default function DashboardLayout({
 
   // Function to check if a user has admin access
   const hasAdminAccess = () => {
-    console.log('[DashboardLayout] Verificando acceso admin. userRole:', userRole);
+    // console.log('[DashboardLayout] Verificando acceso admin. userRole:', userRole);
     return userRole === 'administrador' || userRole === 'admin' || userRole === 'superadmin';
   };
 
@@ -603,11 +560,11 @@ export default function DashboardLayout({
   };
 
   // Filtrar secciones y items según permisos del usuario
-  console.log('[DashboardLayout] Filtrando navegación. userRole:', userRole, 'hasAdminAccess:', hasAdminAccess());
+  // console.log('[DashboardLayout] Filtrando navegación. userRole:', userRole, 'hasAdminAccess:', hasAdminAccess());
   const filteredNavigationSections = Object.entries(navigationSections).reduce<Record<string, NavSection>>((acc, [key, section]) => {
     // Filtrar items según permisos granulares
     const filteredItems = section.items.filter((item: NavItem) => {
-      console.log('[DashboardLayout] Evaluando item:', item.name, 'adminOnly:', item.adminOnly, 'granularPermission:', item.granularPermission);
+      // console.log('[DashboardLayout] Evaluando item:', item.name, 'adminOnly:', item.adminOnly, 'granularPermission:', item.granularPermission);
       
       // Si es adminOnly y no tiene acceso admin, no mostrar
       if (item.adminOnly && !hasAdminAccess()) return false;
@@ -615,7 +572,7 @@ export default function DashboardLayout({
       // Priorizar permisos granulares si están definidos
       if ('granularPermission' in item && item.granularPermission) {
         const hasAccess = checkGranularPermission(item.granularPermission);
-        console.log('[DashboardLayout] Permiso granular:', item.granularPermission, 'acceso:', hasAccess);
+        // console.log('[DashboardLayout] Permiso granular:', item.granularPermission, 'acceso:', hasAccess);
         return hasAccess;
       }
       
@@ -630,15 +587,15 @@ export default function DashboardLayout({
 
     // Siempre mostrar la sección "operation" aunque esté vacía
     if (filteredItems.length > 0 || key === 'operation') {
-      console.log('[DashboardLayout] Sección', key, 'tiene', filteredItems.length, 'items visibles');
+      // console.log('[DashboardLayout] Sección', key, 'tiene', filteredItems.length, 'items visibles');
       acc[key] = { ...section, items: filteredItems as NavItem[] };
     } else {
-      console.log('[DashboardLayout] ❌ Sección', key, 'filtrada completamente');
+      // console.log('[DashboardLayout] ❌ Sección', key, 'filtrada completamente');
     }
     return acc;
   }, {});
   
-  console.log('[DashboardLayout] Secciones finales:', Object.keys(filteredNavigationSections));
+  // console.log('[DashboardLayout] Secciones finales:', Object.keys(filteredNavigationSections));
 
   // Mostrar loader mientras se carga la autenticación o el rol
   if (status === "loading" || (session && userRole === null)) {
@@ -689,8 +646,11 @@ export default function DashboardLayout({
             </div>
             
             {/* User info */}
-            <div className="relative group">
-              <button className="h-12 flex items-center gap-3 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm">
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="h-12 flex items-center gap-3 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-100/50 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors backdrop-blur-sm"
+              >
                 <span className="hidden md:block text-right">
                   <span className="block text-sm font-medium text-gray-900 dark:text-white">
                     {userName || "Usuario"}
@@ -704,14 +664,70 @@ export default function DashboardLayout({
                 </div>
               </button>
               {/* Dropdown user menu con estilo mejorado */}
-              <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              {showUserMenu && (
+                <div className="absolute right-0 z-[100] mt-2 w-56 origin-top-right rounded-md bg-white dark:bg-gray-800 py-1 shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
                   <div className="font-medium truncate">{userEmail || "email@example.com"}</div>
                   <div className="text-xs text-gray-500">Rol: {userRole === 'superadmin' ? 'Super Administrador' : userRole}</div>
                 </div>
+                
+                {/* Menú de administración solo para administradores */}
+                {hasAdminAccess() && (
+                  <>
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Administración
+                    </div>
+                    <Link
+                      href="/administracion/usuarios"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    >
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                        </svg>
+                        Usuarios
+                      </div>
+                    </Link>
+                    <Link
+                      href="/administracion/roles"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    >
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                        Roles
+                      </div>
+                    </Link>
+                    <Link
+                      href="/administracion/grupos"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    >
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                        </svg>
+                        Grupos
+                      </div>
+                    </Link>
+                    <Link
+                      href="/administracion/configuracion"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 cursor-pointer"
+                    >
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        Configuración
+                      </div>
+                    </Link>
+                  </>
+                )}
+                
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium mt-1"
+                  className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium mt-1 cursor-pointer"
                 >
                   <div className="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -721,6 +737,7 @@ export default function DashboardLayout({
                   </div>
                 </button>
               </div>
+              )}
             </div>
           </div>
         </div>

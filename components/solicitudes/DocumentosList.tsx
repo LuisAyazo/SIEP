@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getSignedUrl } from '@/lib/supabase/storage';
 
 interface Documento {
@@ -13,19 +13,42 @@ interface Documento {
 }
 
 interface DocumentosListProps {
-  documentos: Documento[];
+  documentos?: Documento[];
   solicitudId: string;
   className?: string;
   showActions?: boolean;
 }
 
-export default function DocumentosList({ 
-  documentos, 
+export default function DocumentosList({
+  documentos: documentosProp,
   solicitudId,
   className = '',
-  showActions = true 
+  showActions = true
 }: DocumentosListProps) {
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [documentos, setDocumentos] = useState<Documento[]>(documentosProp || []);
+  const [loading, setLoading] = useState(!documentosProp);
+
+  useEffect(() => {
+    if (!documentosProp) {
+      loadDocumentos();
+    }
+  }, [solicitudId, documentosProp]);
+
+  async function loadDocumentos() {
+    try {
+      const response = await fetch(`/api/solicitudes/${solicitudId}/documentos`);
+      const data = await response.json();
+      
+      if (response.ok && data.documentos) {
+        setDocumentos(data.documentos);
+      }
+    } catch (error) {
+      console.error('Error cargando documentos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleDownload = async (documento: Documento) => {
     try {
@@ -119,10 +142,19 @@ export default function DocumentosList({
     });
   };
 
-  if (documentos.length === 0) {
+  if (loading) {
     return (
-      <div className={`bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center ${className}`}>
-        <p className="text-gray-500 text-sm">No hay documentos adjuntos</p>
+      <div className={`bg-gray-50 border border-gray-300 rounded-lg p-8 text-center ${className}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-500 text-sm mt-2">Cargando documentos...</p>
+      </div>
+    );
+  }
+
+  if (!documentos || documentos.length === 0) {
+    return (
+      <div className={`bg-gray-50 dark:bg-slate-700 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center ${className}`}>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">No hay documentos adjuntos</p>
       </div>
     );
   }
@@ -212,17 +244,17 @@ export default function DocumentosList({
 // Componente simplificado para mostrar solo nombres
 export function DocumentosListSimple({ documentos, className = '' }: { documentos: Documento[], className?: string }) {
   if (documentos.length === 0) {
-    return <p className="text-sm text-gray-500">Sin documentos</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400">Sin documentos</p>;
   }
 
   return (
     <ul className={`space-y-1 ${className}`}>
       {documentos.map((doc, index) => (
-        <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+        <li key={index} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <span>{getIconForType(doc.tipo)}</span>
           <span className="truncate">{doc.nombre}</span>
           {doc.requerido && (
-            <span className="text-xs text-red-600">*</span>
+            <span className="text-xs text-red-600 dark:text-red-400">*</span>
           )}
         </li>
       ))}

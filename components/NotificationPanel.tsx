@@ -11,6 +11,7 @@ interface Notification {
   read: boolean;
   created_at: string;
   link?: string;
+  center_name?: string;
 }
 
 export default function NotificationPanel() {
@@ -39,10 +40,59 @@ export default function NotificationPanel() {
     };
   }, [isOpen]);
 
-  // Cargar notificaciones
+  // Cargar notificaciones y suscribirse a cambios en tiempo real
   useEffect(() => {
     if (session?.user?.id) {
       loadNotifications();
+      
+      // Suscribirse a cambios en tiempo real
+      console.log('🔔 [NotificationPanel] Suscribiéndose a notificaciones en tiempo real');
+      const channel = supabase
+        .channel('notifications-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${session.user.id}`
+          },
+          (payload) => {
+            console.log('🔔 [NotificationPanel] Cambio detectado:', payload);
+            
+            if (payload.eventType === 'INSERT') {
+              // Nueva notificación
+              const newNotification = payload.new as Notification;
+              setNotifications(prev => [newNotification, ...prev].slice(0, 10));
+              setUnreadCount(prev => prev + 1);
+              console.log('✅ [NotificationPanel] Nueva notificación agregada');
+            } else if (payload.eventType === 'UPDATE') {
+              // Notificación actualizada
+              const updatedNotification = payload.new as Notification;
+              setNotifications(prev =>
+                prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+              );
+              // Recalcular contador de no leídas
+              setNotifications(prev => {
+                setUnreadCount(prev.filter(n => !n.read).length);
+                return prev;
+              });
+              console.log('✅ [NotificationPanel] Notificación actualizada');
+            } else if (payload.eventType === 'DELETE') {
+              // Notificación eliminada
+              const deletedId = payload.old.id;
+              setNotifications(prev => prev.filter(n => n.id !== deletedId));
+              console.log('✅ [NotificationPanel] Notificación eliminada');
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup: desuscribirse al desmontar
+      return () => {
+        console.log('🔔 [NotificationPanel] Desuscribiéndose de notificaciones');
+        supabase.removeChannel(channel);
+      };
     }
   }, [session?.user?.id]);
 
@@ -208,7 +258,7 @@ export default function NotificationPanel() {
 
       {/* Panel de notificaciones */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+        <div className="fixed right-4 top-16 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-[9999] border border-gray-200 dark:border-gray-700">
           {/* Header del panel */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -262,8 +312,8 @@ export default function NotificationPanel() {
                       {getNotificationIcon(notification.type)}
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-medium ${
-                          !notification.read 
-                            ? 'text-gray-900 dark:text-white' 
+                          !notification.read
+                            ? 'text-gray-900 dark:text-white'
                             : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           {notification.title}
@@ -271,6 +321,11 @@ export default function NotificationPanel() {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {notification.message}
                         </p>
+                        {notification.center_name && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
+                            📍 {notification.center_name}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                           {formatDate(notification.created_at)}
                         </p>

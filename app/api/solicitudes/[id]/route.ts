@@ -138,19 +138,77 @@ export async function PATCH(
       )
     }
 
-    const body = await request.json()
+    // Obtener solicitud actual
+    const { data: solicitudActual, error: fetchError } = await supabase
+      .from('solicitudes')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-    // Campos permitidos para actualizar
-    const allowedFields = ['title', 'description', 'tipo', 'priority', 'deadline', 'status']
-    const updates: any = {}
+    if (fetchError || !solicitudActual) {
+      return NextResponse.json(
+        { error: 'Solicitud no encontrada' },
+        { status: 404 }
+      )
+    }
 
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field]
+    // Verificar que sea el creador
+    if (solicitudActual.created_by !== user.id) {
+      return NextResponse.json(
+        { error: 'No tienes permiso para modificar esta solicitud' },
+        { status: 403 }
+      )
+    }
+
+    const contentType = request.headers.get('content-type') || ''
+    let updates: any = {}
+    let archivosSubidos: string[] = []
+
+    // Manejar FormData (con archivos)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      
+      // Extraer campos de texto
+      const title = formData.get('title')
+      const description = formData.get('description')
+      const priority = formData.get('priority')
+      
+      if (title) updates.title = title.toString()
+      if (description) updates.description = description.toString()
+      if (priority) updates.priority = priority.toString()
+
+      // Manejar archivos
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File && value.size > 0) {
+          try {
+            const fileName = `${id}/${key}_${Date.now()}_${value.name}`
+            const { error: uploadError } = await supabase.storage
+              .from('solicitudes')
+              .upload(fileName, value)
+
+            if (uploadError) {
+              console.error('Error subiendo archivo:', uploadError)
+            } else {
+              archivosSubidos.push(`${key}: ${value.name}`)
+            }
+          } catch (err) {
+            console.error('Error procesando archivo:', err)
+          }
+        }
+      }
+    } else {
+      // Manejar JSON
+      const body = await request.json()
+      const allowedFields = ['title', 'description', 'tipo', 'priority', 'deadline', 'status']
+      
+      for (const field of allowedFields) {
+        if (body[field] !== undefined) {
+          updates[field] = body[field]
+        }
       }
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && archivosSubidos.length === 0) {
       return NextResponse.json(
         { error: 'No hay campos para actualizar' },
         { status: 400 }
@@ -186,6 +244,35 @@ export async function PATCH(
         { error: 'Error al actualizar solicitud', details: error.message },
         { status: 500 }
       )
+    }
+
+    // Registrar en el historial
+    const cambios = []
+    if (updates.title && updates.title !== solicitudActual.title) {
+      cambios.push(`Título actualizado`)
+    }
+    if (updates.description && updates.description !== solicitudActual.description) {
+      cambios.push(`Descripción actualizada`)
+    }
+    if (updates.priority && updates.priority !== solicitudActual.priority) {
+      cambios.push(`Prioridad cambiada a ${updates.priority}`)
+    }
+    if (archivosSubidos.length > 0) {
+      cambios.push(`Documentos actualizados: ${archivosSubidos.join(', ')}`)
+    }
+
+    if (cambios.length > 0) {
+      await supabase
+        .from('solicitud_historial')
+        .insert({
+          solicitud_id: id,
+          estado_anterior: solicitudActual.status,
+          estado_nuevo: solicitudActual.status,
+          user_id: user.id,
+          user_name: user.user_metadata?.full_name || user.email,
+          user_role: 'Creador',
+          comentario: `Solicitud modificada: ${cambios.join(', ')}`
+        })
     }
 
     return NextResponse.json({

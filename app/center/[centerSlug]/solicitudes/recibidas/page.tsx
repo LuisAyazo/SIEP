@@ -19,7 +19,7 @@ interface Solicitud {
   };
 }
 
-export default function SolicitudesExternasPage({
+export default function SolicitudesRecibidasPage({
   params
 }: {
   params: Promise<{ centerSlug: string }>
@@ -36,8 +36,10 @@ export default function SolicitudesExternasPage({
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadSolicitudesExternas();
-  }, [selectedEstado, selectedTipo]);
+    if (currentCenter) {
+      loadSolicitudesExternas();
+    }
+  }, [currentCenter, selectedEstado, selectedTipo]);
 
   async function loadSolicitudesExternas() {
     try {
@@ -168,7 +170,7 @@ export default function SolicitudesExternasPage({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Solicitudes Externas</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Solicitudes Recibidas</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Solicitudes creadas por usuarios sin centro asignado
           </p>
@@ -263,7 +265,7 @@ export default function SolicitudesExternasPage({
               <div
                 key={solicitud.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 dark:hover:border-blue-600"
-                onClick={() => router.push(`/solicitudes/${solicitud.id}`)}
+                onClick={() => router.push(`/center/${resolvedParams.centerSlug}/solicitudes/${solicitud.id}`)}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">

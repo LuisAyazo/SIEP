@@ -4,26 +4,28 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import EstadoBadge from '@/components/solicitudes/EstadoBadge';
-import HistorialTimeline from '@/components/solicitudes/HistorialTimeline';
 import DocumentosList from '@/components/solicitudes/DocumentosList';
-import { ArrowLeft, FileText, Calendar, User } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import Image from 'next/image';
 
 interface Solicitud {
   id: string;
   tipo_solicitud: string;
-  metodo_ficha_tecnica: string;
-  estado: string;
+  status: string;
+  nombre_proyecto?: string;
   observaciones?: string;
   created_at: string;
   title?: string;
   description?: string;
   priority?: string;
-  funcionario: {
+  created_by_profile: {
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
+    full_name?: string;
+  };
+  center?: {
+    id: string;
+    name: string;
+    slug: string;
   };
 }
 
@@ -94,6 +96,11 @@ export default function SolicitudDetallePage({
     };
     return labels[tipo] || tipo;
   }
+
+  const puedeSerCancelada = solicitud &&
+    solicitud.status !== 'aprobado' &&
+    solicitud.status !== 'rechazado' &&
+    solicitud.status !== 'cancelado';
 
   if (authLoading || loading) {
     return (
@@ -173,115 +180,93 @@ export default function SolicitudDetallePage({
     return null;
   }
 
-  const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                            solicitud.funcionario?.email || 
+  const funcionarioNombre = solicitud.created_by_profile?.full_name ||
+                            solicitud.created_by_profile?.email ||
                             'Desconocido';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header Simple */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Image
-                src="/images/logo-oficial.png"
-                alt="Logo Universidad"
-                width={50}
-                height={50}
-                className="object-contain"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Sistema de Gestión
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {session?.user?.email}
-                </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Botón Volver */}
+      <button
+        onClick={() => router.push('/solicitudes')}
+        className="mb-6 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center gap-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Volver a Mis Solicitudes
+      </button>
+
+      <div className="space-y-6">
+        {/* Header de Solicitud */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">
+                  #{solicitud.id.slice(0, 8)}
+                </span>
+                <EstadoBadge estado={solicitud.status as any} />
               </div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {getTipoLabel(solicitud.tipo_solicitud)}
+              </h1>
+              {solicitud.nombre_proyecto && (
+                <p className="text-gray-600 dark:text-gray-300">{solicitud.nombre_proyecto}</p>
+              )}
+              {solicitud.description && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{solicitud.description}</p>
+              )}
             </div>
-            <button
-              onClick={() => router.push('/solicitudes')}
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Volver a Mis Solicitudes
-            </button>
+            <div className="flex gap-3">
+              {puedeSerCancelada && (
+                <button
+                  onClick={() => router.push(`/solicitudes/${resolvedParams.id}/editar`)}
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  ✏️ Modificar Solicitud
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
 
-      {/* Contenido Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Header de Solicitud */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    #{solicitud.id.slice(0, 8)}
-                  </span>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {solicitud.title || getTipoLabel(solicitud.tipo_solicitud)}
-                  </h1>
-                </div>
-                {solicitud.description && (
-                  <p className="text-gray-600 mt-2">{solicitud.description}</p>
-                )}
-              </div>
-              <EstadoBadge estado={solicitud.estado as any} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t dark:border-slate-600">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Fecha de Creación</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {formatDate(solicitud.created_at)}
+              </p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Tipo</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getTipoLabel(solicitud.tipo_solicitud)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Creada</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {formatDate(solicitud.created_at)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Creada por</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {funcionarioNombre}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {solicitud.observaciones && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm font-medium text-gray-700 mb-1">Observaciones:</p>
-                <p className="text-sm text-gray-600">{solicitud.observaciones}</p>
+            {solicitud.center && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Centro Destinatario</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {solicitud.center.name}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Documentos */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Documentos Adjuntos</h2>
-            <DocumentosList solicitudId={solicitud.id} />
-          </div>
+          {solicitud.observaciones && (
+            <div className="mt-4 pt-4 border-t dark:border-slate-600">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones:</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{solicitud.observaciones}</p>
+            </div>
+          )}
 
-          {/* Historial */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Historial de Cambios</h2>
-            <HistorialTimeline solicitudId={solicitud.id} />
+          <div className="mt-4 pt-4 border-t dark:border-slate-600">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado Actual</p>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                Tu solicitud ha sido enviada al centro correspondiente.
+                Recibirás notificaciones sobre cualquier actualización en el estado de tu solicitud.
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Documentos Adjuntos */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Documentos Adjuntos</h2>
+          <DocumentosList solicitudId={resolvedParams.id} />
         </div>
       </div>
     </div>

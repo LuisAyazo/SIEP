@@ -177,40 +177,40 @@ export default function CreateMeetingPage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 py-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-900 dark:text-white"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nuevo Comité</h1>
-          <p className="text-gray-600 mt-1">Programa un nuevo comité del centro</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nuevo Comité</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Programa un nuevo comité del centro</p>
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           {error}
         </div>
       )}
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Información Básica */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Información Básica
           </h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Título del Comité *
             </label>
             <input
@@ -219,13 +219,13 @@ export default function CreateMeetingPage({
               value={formData.title}
               onChange={handleInputChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               placeholder="Ej: Comité de Planificación Mensual"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Descripción
             </label>
             <textarea
@@ -233,22 +233,22 @@ export default function CreateMeetingPage({
               value={formData.description}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               placeholder="Describe el objetivo y temas a tratar..."
             />
           </div>
         </div>
 
         {/* Fecha y Hora */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Clock className="w-5 h-5" />
             Fecha y Hora
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Fecha y Hora *
               </label>
               <input
@@ -257,19 +257,19 @@ export default function CreateMeetingPage({
                 value={formData.scheduled_at}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Duración (minutos) *
               </label>
               <select
                 name="duration_minutes"
                 value={formData.duration_minutes}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               >
                 <option value={30}>30 minutos</option>
                 <option value={60}>1 hora</option>
@@ -282,22 +282,22 @@ export default function CreateMeetingPage({
         </div>
 
         {/* Plataforma Virtual */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Video className="w-5 h-5" />
             Plataforma Virtual (Opcional)
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Plataforma
               </label>
               <select
                 name="meeting_platform"
                 value={formData.meeting_platform}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               >
                 <option value="">Seleccionar...</option>
                 <option value="google_meet">Google Meet</option>
@@ -310,7 +310,7 @@ export default function CreateMeetingPage({
 
             {formData.meeting_platform && formData.meeting_platform !== 'google_meet' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   URL del Comité
                 </label>
                 <input
@@ -318,7 +318,7 @@ export default function CreateMeetingPage({
                   name="meeting_url"
                   value={formData.meeting_url}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                   placeholder="https://..."
                 />
               </div>
@@ -327,18 +327,18 @@ export default function CreateMeetingPage({
 
           {/* Info Google Meet */}
           {formData.meeting_platform === 'google_meet' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
               <div className="flex items-start gap-3">
-                <Video className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Video className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-blue-900 mb-1">
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">
                     🎉 Google Meet se generará automáticamente
                   </h4>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
                     Al crear el comité, se generará un enlace de Google Calendar con Google Meet integrado.
                     Los participantes recibirán una invitación por email con el enlace de la videollamada.
                   </p>
-                  <p className="text-xs text-blue-600 mt-2 font-medium">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">
                     ✓ 100% Gratis • ✓ Sin límite de tiempo • ✓ Hasta 100 participantes
                   </p>
                 </div>
@@ -348,11 +348,11 @@ export default function CreateMeetingPage({
         </div>
 
         {/* Participantes */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Users className="w-5 h-5" />
             Participantes
-            <span className="ml-2 text-sm text-gray-500 font-normal">
+            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-normal">
               ({selectedParticipants.length} seleccionados)
             </span>
           </h2>
@@ -364,31 +364,31 @@ export default function CreateMeetingPage({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por nombre o email..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white bg-white dark:bg-gray-700"
             />
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
           </div>
 
-          <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-md">
+          <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
             {filteredUsers.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 {searchTerm ? 'No se encontraron usuarios' : 'No hay usuarios disponibles'}
               </div>
             ) : (
               filteredUsers.map(user => (
                 <label
                   key={user.id}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                 >
                   <input
                     type="checkbox"
                     checked={selectedParticipants.includes(user.id)}
                     onChange={() => toggleParticipant(user.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">{user.full_name}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
                   </div>
                 </label>
               ))
@@ -401,7 +401,7 @@ export default function CreateMeetingPage({
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Cancelar
           </button>

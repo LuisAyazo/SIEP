@@ -1,12 +1,12 @@
 /**
  * API Routes para Solicitudes (Fichas Técnicas)
- * 
+ *
  * GET /api/solicitudes - Listar solicitudes
  * POST /api/solicitudes - Crear solicitud con documentos
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 // Tipos
 interface SolicitudFilters {
@@ -341,12 +341,17 @@ export async function POST(request: NextRequest) {
     const solicitudId = solicitud.id
 
     // Subir archivos a Storage
+    console.log('📦 [API] Iniciando subida de archivos...');
+    console.log('📋 [API] FormData keys:', Array.from(formData.keys()));
+    
     const uploadResults: Record<string, any> = {}
     const pathsToUpdate: Record<string, string> = {}
 
     // Función auxiliar para subir archivo
     const uploadFile = async (fieldName: string, file: File) => {
       try {
+        console.log(`📤 [API] Subiendo archivo ${fieldName}:`, file.name, file.size, 'bytes');
+        
         // Generar path
         const { data: pathData, error: pathError } = await supabase.rpc(
           'generate_storage_path',
@@ -359,10 +364,13 @@ export async function POST(request: NextRequest) {
         )
 
         if (pathError) {
+          console.error(`❌ [API] Error generando path para ${fieldName}:`, pathError);
           throw new Error(`Error generando path: ${pathError.message}`)
         }
 
         const filePath = pathData as string
+        console.log(`📁 [API] Path generado:`, filePath);
+        console.log(`📁 [API] Bucket: solicitudes`);
 
         // Subir archivo
         const { data, error } = await supabase.storage
@@ -373,15 +381,17 @@ export async function POST(request: NextRequest) {
           })
 
         if (error) {
+          console.error(`❌ [API] Error subiendo archivo ${fieldName}:`, error);
           throw new Error(`Error subiendo archivo: ${error.message}`)
         }
 
+        console.log(`✅ [API] Archivo ${fieldName} subido exitosamente`);
         return { success: true, path: data.path }
       } catch (error) {
-        console.error(`Error subiendo ${fieldName}:`, error)
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Error desconocido' 
+        console.error(`❌ [API] Error subiendo ${fieldName}:`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Error desconocido'
         }
       }
     }
@@ -448,15 +458,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Actualizar solicitud con paths de archivos
+    // Actualizar solicitud con paths de archivos usando cliente admin
+    // para evitar problemas con RLS
     if (Object.keys(pathsToUpdate).length > 0) {
-      const { error: updateError } = await supabase
+      console.log('💾 [API] Actualizando paths en BD:', pathsToUpdate);
+      const adminClient = createAdminClient()
+      const { error: updateError } = await adminClient
         .from('solicitudes')
         .update(pathsToUpdate)
         .eq('id', solicitudId)
 
       if (updateError) {
-        console.error('[API] Error actualizando paths:', updateError)
+        console.error('❌ [API] Error actualizando paths:', updateError)
+      } else {
+        console.log('✅ [API] Paths actualizados exitosamente en BD')
       }
     }
 
@@ -480,11 +495,17 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Enviar notificaciones a los grupos de notificación
+    console.log('📢 [API] Iniciando envío de notificaciones...');
+    console.log('🏢 [API] Centro ID:', centerId);
+    
     try {
+      // Usar cliente admin para consultar grupos y miembros
+      const adminClient = createAdminClient()
+      
       // Buscar grupos de tipo "notificacion" del centro (si hay centro) o globales
-      let notificationGroupsQuery = supabase
+      let notificationGroupsQuery = adminClient
         .from('user_groups')
-        .select('id, nombre, user_group_members(user_id)')
+        .select('id, nombre')
         .eq('tipo', 'notificacion')
         .eq('activo', true)
 
@@ -496,45 +517,63 @@ export async function POST(request: NextRequest) {
         notificationGroupsQuery = notificationGroupsQuery.is('centro_id', null)
       }
 
-      const { data: notificationGroups } = await notificationGroupsQuery
+      const { data: notificationGroups, error: groupsError } = await notificationGroupsQuery
+      
+      console.log('📋 [API] Grupos de notificación encontrados:', notificationGroups?.length || 0);
+      if (groupsError) {
+        console.error('❌ [API] Error buscando grupos:', groupsError);
+      }
 
       if (notificationGroups && notificationGroups.length > 0) {
-        // Recopilar todos los user_ids únicos de los grupos
-        const userIds = new Set<string>()
-        notificationGroups.forEach(group => {
-          if (group.user_group_members) {
-            group.user_group_members.forEach((member: any) => {
-              userIds.add(member.user_id)
-            })
-          }
-        })
+        // Obtener miembros de todos los grupos
+        const groupIds = notificationGroups.map(g => g.id)
+        const { data: members, error: membersError } = await adminClient
+          .from('user_group_members')
+          .select('user_id, group_id')
+          .in('group_id', groupIds)
+        
+        console.log('👥 [API] Miembros encontrados:', members?.length || 0);
+        if (membersError) {
+          console.error('❌ [API] Error buscando miembros:', membersError);
+        }
 
-        // Crear notificaciones para cada usuario
-        const notifications = Array.from(userIds).map(userId => ({
-          user_id: userId,
-          title: 'Nueva Solicitud Creada',
-          message: `Se ha creado una nueva solicitud: ${nombreProyecto}`,
-          type: 'info',
-          link: centerId
-            ? `/center/${solicitudCompleta?.center?.slug}/solicitudes/${solicitudId}`
-            : `/solicitudes/${solicitudId}`,
-          read: false
-        }))
+        if (members && members.length > 0) {
+          // Recopilar todos los user_ids únicos
+          const userIds = new Set<string>()
+          members.forEach(member => {
+            userIds.add(member.user_id)
+          })
+          
+          console.log('👥 [API] Usuarios únicos a notificar:', Array.from(userIds));
 
-        if (notifications.length > 0) {
-          const { error: notifError } = await supabase
-            .from('notifications')
-            .insert(notifications)
+          // Crear notificaciones para cada usuario
+          const notifications = Array.from(userIds).map(userId => ({
+            user_id: userId,
+            title: 'Nueva Solicitud Creada',
+            message: `Se ha creado una nueva solicitud: ${nombreProyecto}`,
+            type: 'info',
+            link: centerId
+              ? `/center/${solicitudCompleta?.center?.slug}/solicitudes/${solicitudId}`
+              : `/solicitudes/${solicitudId}`,
+            center_name: solicitudCompleta?.center?.name || null,
+            read: false
+          }))
 
-          if (notifError) {
-            console.error('[API] Error creando notificaciones:', notifError)
-          } else {
-            console.log(`[API] ${notifications.length} notificaciones creadas exitosamente`)
+          if (notifications.length > 0) {
+            const { error: notifError } = await adminClient
+              .from('notifications')
+              .insert(notifications)
+
+            if (notifError) {
+              console.error('❌ [API] Error creando notificaciones:', notifError)
+            } else {
+              console.log(`✅ [API] ${notifications.length} notificaciones creadas exitosamente`)
+            }
           }
         }
       }
     } catch (notifError) {
-      console.error('[API] Error en sistema de notificaciones:', notifError)
+      console.error('❌ [API] Error en sistema de notificaciones:', notifError)
       // No fallar la creación de solicitud si falla la notificación
     }
 

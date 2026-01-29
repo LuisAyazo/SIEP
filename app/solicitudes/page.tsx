@@ -8,16 +8,20 @@ import { Plus, Search, FileText } from 'lucide-react';
 
 interface Solicitud {
   id: string;
-  tipo: string;
-  metodo_ficha_tecnica: string;
-  estado: EstadoSolicitud;
+  tipo_solicitud: string;
+  status: EstadoSolicitud;
+  nombre_proyecto?: string;
+  description?: string;
   observaciones?: string;
   created_at: string;
-  funcionario: {
+  created_by_profile: {
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
+    full_name?: string;
+  };
+  center?: {
+    id: string;
+    name: string;
+    slug: string;
   };
 }
 
@@ -52,13 +56,13 @@ export default function MisSolicitudesPage() {
       setLoading(true);
       setError('');
 
-      // Cargar solo las solicitudes del usuario actual SIN centro
-      let url = `/api/solicitudes?user_only=true&no_center=true`;
+      // Cargar TODAS las solicitudes del usuario actual (con o sin centro)
+      let url = `/api/solicitudes?user_only=true`;
       if (selectedEstado !== 'all') {
-        url += `&estado=${selectedEstado}`;
+        url += `&status=${selectedEstado}`;
       }
       if (selectedTipo !== 'all') {
-        url += `&tipo=${selectedTipo}`;
+        url += `&tipo_solicitud=${selectedTipo}`;
       }
 
       const response = await fetch(url);
@@ -106,7 +110,9 @@ export default function MisSolicitudesPage() {
     
     return (
       solicitud.id.toLowerCase().includes(searchLower) ||
-      getTipoLabel(solicitud.tipo).toLowerCase().includes(searchLower)
+      (solicitud.nombre_proyecto && solicitud.nombre_proyecto.toLowerCase().includes(searchLower)) ||
+      getTipoLabel(solicitud.tipo_solicitud).toLowerCase().includes(searchLower) ||
+      (solicitud.center?.name && solicitud.center.name.toLowerCase().includes(searchLower))
     );
   });
 
@@ -271,11 +277,16 @@ export default function MisSolicitudesPage() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredSolicitudes.map((solicitud) => (
+            {filteredSolicitudes.map((solicitud) => {
+              // Para usuarios sin centros, siempre navegar a /solicitudes/[id]
+              // independientemente de si la solicitud tiene centro asignado
+              const detailUrl = `/solicitudes/${solicitud.id}`;
+              
+              return (
               <div
                 key={solicitud.id}
                 className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 dark:hover:border-blue-600"
-                onClick={() => router.push(`/solicitudes/${solicitud.id}`)}
+                onClick={() => router.push(detailUrl)}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
@@ -284,9 +295,19 @@ export default function MisSolicitudesPage() {
                         #{solicitud.id.slice(0, 8)}
                       </span>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {getTipoLabel(solicitud.tipo)}
+                        {solicitud.nombre_proyecto || getTipoLabel(solicitud.tipo_solicitud)}
                       </h3>
+                      {solicitud.center && (
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full">
+                          {solicitud.center.name}
+                        </span>
+                      )}
                     </div>
+                    {solicitud.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
+                        {solicitud.description}
+                      </p>
+                    )}
                     {solicitud.observaciones && (
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
                         <span className="font-medium">Observaciones:</span> {solicitud.observaciones}
@@ -294,15 +315,15 @@ export default function MisSolicitudesPage() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <EstadoBadge estado={solicitud.estado} />
+                    <EstadoBadge estado={solicitud.status} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-slate-600 text-sm">
                   <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Método:</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400 capitalize">
-                      {solicitud.metodo_ficha_tecnica || 'N/A'}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Tipo:</span>{' '}
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {getTipoLabel(solicitud.tipo_solicitud)}
                     </span>
                   </div>
                   <div>
@@ -313,7 +334,8 @@ export default function MisSolicitudesPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

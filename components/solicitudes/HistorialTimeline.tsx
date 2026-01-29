@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { EstadoSolicitud } from './EstadoBadge';
 
 export interface HistorialItem {
@@ -14,19 +14,50 @@ export interface HistorialItem {
 }
 
 interface HistorialTimelineProps {
-  historial: HistorialItem[];
+  historial?: HistorialItem[];
+  solicitudId?: string;
   className?: string;
 }
 
-export default function HistorialTimeline({ historial, className = '' }: HistorialTimelineProps) {
+export default function HistorialTimeline({ historial: historialProp, solicitudId, className = '' }: HistorialTimelineProps) {
+  const [historial, setHistorial] = useState<HistorialItem[]>(historialProp || []);
+  const [loading, setLoading] = useState(!historialProp);
+
+  useEffect(() => {
+    if (!historialProp && solicitudId) {
+      loadHistorial();
+    }
+  }, [solicitudId, historialProp]);
+
+  async function loadHistorial() {
+    try {
+      const response = await fetch(`/api/solicitudes/${solicitudId}/historial`);
+      const data = await response.json();
+      
+      if (response.ok && data.historial) {
+        setHistorial(data.historial);
+      } else {
+        console.error('Error al cargar historial:', response.status, data);
+        // En caso de error, establecer array vacío en lugar de fallar
+        setHistorial([]);
+      }
+    } catch (error) {
+      console.error('Error cargando historial:', error);
+      // En caso de error, establecer array vacío en lugar de fallar
+      setHistorial([]);
+    } finally {
+      setLoading(false);
+    }
+  }
   const getEstadoConfig = (estado: EstadoSolicitud) => {
     const config: Record<EstadoSolicitud, { color: string; icon: string; label: string }> = {
-      nuevo: { color: 'bg-blue-500', icon: '🆕', label: 'Nuevo' },
-      recibido: { color: 'bg-indigo-500', icon: '📥', label: 'Recibido' },
-      en_comite: { color: 'bg-purple-500', icon: '👥', label: 'En Comité' },
-      observado: { color: 'bg-yellow-500', icon: '📝', label: 'Observado' },
-      aprobado: { color: 'bg-green-500', icon: '✅', label: 'Aprobado' },
-      rechazado: { color: 'bg-red-500', icon: '❌', label: 'Rechazado' }
+      nuevo: { color: 'bg-blue-500 dark:bg-blue-600', icon: '🆕', label: 'Nuevo' },
+      recibido: { color: 'bg-indigo-500 dark:bg-indigo-600', icon: '📥', label: 'Recibido' },
+      en_comite: { color: 'bg-purple-500 dark:bg-purple-600', icon: '👥', label: 'En Comité' },
+      observado: { color: 'bg-yellow-500 dark:bg-yellow-600', icon: '📝', label: 'Observado' },
+      aprobado: { color: 'bg-green-500 dark:bg-green-600', icon: '✅', label: 'Aprobado' },
+      rechazado: { color: 'bg-red-500 dark:bg-red-600', icon: '❌', label: 'Rechazado' },
+      cancelado: { color: 'bg-gray-500 dark:bg-gray-600', icon: '🚫', label: 'Cancelado' }
     };
     return config[estado];
   };
@@ -55,28 +86,41 @@ export default function HistorialTimeline({ historial, className = '' }: Histori
       'en_comite_observado': 'Devuelta con observaciones',
       'observado_nuevo': 'Devuelta al funcionario para correcciones',
       'nuevo_rechazado': 'Rechazada por el director',
-      'recibido_rechazado': 'Rechazada por el director'
+      'recibido_rechazado': 'Rechazada por el director',
+      'nuevo_cancelado': 'Cancelada por el creador',
+      'recibido_cancelado': 'Cancelada por el creador',
+      'en_comite_cancelado': 'Cancelada por el creador',
+      'observado_cancelado': 'Cancelada por el creador'
     };
 
     const key = `${item.estado_anterior}_${item.estado_nuevo}`;
     return transiciones[key] || `Cambio de estado: ${item.estado_anterior} → ${item.estado_nuevo}`;
   };
 
-  if (historial.length === 0) {
+  if (loading) {
     return (
-      <div className={`bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center ${className}`}>
-        <p className="text-gray-500 text-sm">No hay historial disponible</p>
+      <div className={`bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center ${className}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Cargando historial...</p>
+      </div>
+    );
+  }
+
+  if (!historial || historial.length === 0) {
+    return (
+      <div className={`bg-gray-50 dark:bg-slate-700 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center ${className}`}>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">No hay historial disponible</p>
       </div>
     );
   }
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de la Solicitud</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de la Solicitud</h3>
       
       <div className="relative">
         {/* Línea vertical */}
-        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
 
         {/* Items del historial */}
         <div className="space-y-6">
@@ -92,14 +136,14 @@ export default function HistorialTimeline({ historial, className = '' }: Histori
                 </div>
 
                 {/* Contenido */}
-                <div className={`bg-white rounded-lg border-2 ${isLast ? 'border-blue-300 shadow-md' : 'border-gray-200'} p-4`}>
+                <div className={`bg-white dark:bg-gray-800 rounded-lg border-2 ${isLast ? 'border-blue-300 dark:border-blue-600 shadow-md' : 'border-gray-200 dark:border-gray-700'} p-4`}>
                   {/* Header */}
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-gray-900">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                         {getAccionDescripcion(item)}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {formatDate(item.created_at)}
                       </p>
                     </div>
@@ -109,16 +153,16 @@ export default function HistorialTimeline({ historial, className = '' }: Histori
                   </div>
 
                   {/* Usuario */}
-                  <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
                     <span className="font-medium">{item.user_name}</span>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="capitalize">{item.user_role}</span>
                   </div>
 
                   {/* Comentario */}
                   {item.comentario && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-sm text-gray-700 italic">
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 italic">
                         "{item.comentario}"
                       </p>
                     </div>
@@ -126,8 +170,8 @@ export default function HistorialTimeline({ historial, className = '' }: Histori
 
                   {/* Indicador de último item */}
                   {isLast && (
-                    <div className="mt-3 pt-3 border-t border-blue-100">
-                      <p className="text-xs text-blue-600 font-medium">
+                    <div className="mt-3 pt-3 border-t border-blue-100 dark:border-blue-900">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                         📍 Estado actual
                       </p>
                     </div>
@@ -144,7 +188,7 @@ export default function HistorialTimeline({ historial, className = '' }: Histori
 
 // Componente simplificado para mostrar solo el último cambio
 export function UltimoCambio({ historial, className = '' }: HistorialTimelineProps) {
-  if (historial.length === 0) {
+  if (!historial || historial.length === 0) {
     return null;
   }
 
@@ -170,10 +214,10 @@ export function UltimoCambio({ historial, className = '' }: HistorialTimelinePro
   };
 
   return (
-    <div className={`flex items-center gap-2 text-sm text-gray-600 ${className}`}>
-      <span className="text-gray-400">Última actualización:</span>
+    <div className={`flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 ${className}`}>
+      <span className="text-gray-400 dark:text-gray-500">Última actualización:</span>
       <span className="font-medium">{formatDate(ultimo.created_at)}</span>
-      <span className="text-gray-400">por</span>
+      <span className="text-gray-400 dark:text-gray-500">por</span>
       <span className="font-medium">{ultimo.user_name}</span>
     </div>
   );

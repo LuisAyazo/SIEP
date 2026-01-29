@@ -1239,7 +1239,7 @@ export default function CreateSolicitudPage() {
   const currentSubsectionData = sectionsData[currentSection][currentSubsectionName];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-24">
       <div className="max-w-full mx-auto px-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nueva Solicitud de Ficha Técnica</h1>

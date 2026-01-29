@@ -3,43 +3,42 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCenterContext } from '@/components/providers/CenterContext';
+import { useSupabaseSession } from '@/components/providers/SessionProvider';
 import EstadoBadge from '@/components/solicitudes/EstadoBadge';
 import DocumentosList from '@/components/solicitudes/DocumentosList';
 import HistorialTimeline, { HistorialItem } from '@/components/solicitudes/HistorialTimeline';
-import { 
-  ArrowLeftIcon, 
-  CheckCircleIcon, 
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
   ArrowUturnLeftIcon,
-  DocumentArrowUpIcon
+  DocumentArrowUpIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface Solicitud {
   id: string;
-  tipo: string;
-  metodo_ficha_tecnica: string;
-  estado: 'nuevo' | 'recibido' | 'en_comite' | 'observado' | 'aprobado' | 'rechazado';
+  tipo_solicitud: string;
+  nombre_proyecto?: string;
+  status: 'nuevo' | 'recibido' | 'en_comite' | 'observado' | 'aprobado' | 'rechazado' | 'cancelado';
   observaciones?: string;
   created_at: string;
-  funcionario: {
+  created_by_profile?: {
+    id: string;
+    full_name?: string;
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
   };
-  director?: {
-    email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
+  center?: {
+    id: string;
+    name: string;
+    slug: string;
   };
-  coordinador?: {
+  assigned_to_profile?: {
+    id: string;
+    full_name?: string;
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
   };
 }
 
@@ -52,10 +51,18 @@ interface Documento {
   created_at: string;
 }
 
+interface Meeting {
+  id: string;
+  title: string;
+  scheduled_at: string;
+  status: string;
+}
+
 export default function SolicitudDetallePage() {
   const params = useParams();
   const router = useRouter();
   const { currentCenter } = useCenterContext() || {};
+  const { session } = useSupabaseSession();
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
@@ -63,6 +70,14 @@ export default function SolicitudDetallePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [comentario, setComentario] = useState('');
   const [actaFile, setActaFile] = useState<File | null>(null);
+  const [showModificacionModal, setShowModificacionModal] = useState(false);
+  const [motivoModificacion, setMotivoModificacion] = useState('');
+  const [descripcionModificacion, setDescripcionModificacion] = useState('');
+  const [motivoSeleccionado, setMotivoSeleccionado] = useState('');
+  const [showComiteModal, setShowComiteModal] = useState(false);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState('');
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
 
   const solicitudId = params.id as string;
 
@@ -100,11 +115,16 @@ export default function SolicitudDetallePage() {
   const loadHistorial = async () => {
     try {
       const response = await fetch(`/api/solicitudes/${solicitudId}/historial`);
-      if (!response.ok) throw new Error('Error al cargar historial');
+      if (!response.ok) {
+        console.error('Error al cargar historial:', response.status);
+        setHistorial([]); // Establecer array vacío si falla
+        return;
+      }
       const data = await response.json();
-      setHistorial(data.historial);
+      setHistorial(data.historial || []);
     } catch (error) {
       console.error('Error:', error);
+      setHistorial([]); // Establecer array vacío si hay error
     }
   };
 
@@ -136,15 +156,45 @@ export default function SolicitudDetallePage() {
     }
   };
 
+  const loadMeetings = async () => {
+    if (!currentCenter?.id) return;
+    
+    setLoadingMeetings(true);
+    try {
+      const response = await fetch(`/api/meetings?center_id=${currentCenter.id}&status=scheduled`);
+      if (!response.ok) throw new Error('Error al cargar comités');
+      const data = await response.json();
+      setMeetings(data.meetings || []);
+    } catch (error) {
+      console.error('Error:', error);
+      setMeetings([]);
+    } finally {
+      setLoadingMeetings(false);
+    }
+  };
+
+  const handleOpenComiteModal = async () => {
+    setShowComiteModal(true);
+    await loadMeetings();
+  };
+
   const handleEnviarComite = async () => {
-    if (!confirm('¿Enviar esta solicitud al comité?')) return;
+    if (!selectedMeetingId) {
+      alert('Debe seleccionar un comité');
+      return;
+    }
+
+    if (!confirm('¿Enviar esta solicitud al comité seleccionado?')) return;
     
     setActionLoading(true);
     try {
       const response = await fetch(`/api/solicitudes/${solicitudId}/enviar-comite`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comentario })
+        body: JSON.stringify({
+          comentario,
+          meeting_id: selectedMeetingId
+        })
       });
 
       if (!response.ok) {
@@ -154,6 +204,8 @@ export default function SolicitudDetallePage() {
 
       alert('Solicitud enviada al comité exitosamente');
       setComentario('');
+      setShowComiteModal(false);
+      setSelectedMeetingId('');
       loadSolicitud();
       loadHistorial();
     } catch (error: any) {
@@ -296,6 +348,45 @@ export default function SolicitudDetallePage() {
     }
   };
 
+  const handleSolicitarModificacion = async () => {
+    const motivo = motivoSeleccionado === 'otro' ? motivoModificacion : motivoSeleccionado;
+    
+    if (!motivo.trim()) {
+      alert('Debe proporcionar un motivo para la solicitud de modificación');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/solicitudes/${solicitudId}/solicitar-modificacion`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motivo,
+          descripcion: descripcionModificacion
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al solicitar modificación');
+      }
+
+      alert('✅ Solicitud de modificación registrada exitosamente');
+      setShowModificacionModal(false);
+      setMotivoModificacion('');
+      setDescripcionModificacion('');
+      setMotivoSeleccionado('');
+      loadSolicitud();
+      loadHistorial();
+    } catch (error: any) {
+      console.error('Error:', error);
+      alert('❌ ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -323,26 +414,28 @@ export default function SolicitudDetallePage() {
     );
   }
 
-  const funcionarioNombre = solicitud.funcionario?.raw_user_meta_data?.full_name || 
-                           solicitud.funcionario?.email || 
-                           'Desconocido';
+  const creadorNombre = solicitud.created_by_profile?.full_name ||
+                        solicitud.created_by_profile?.email ||
+                        'Desconocido';
   
-  const directorNombre = solicitud.director?.raw_user_meta_data?.full_name || 
-                        solicitud.director?.email || 
-                        'No asignado';
+  const asignadoNombre = solicitud.assigned_to_profile?.full_name ||
+                         solicitud.assigned_to_profile?.email ||
+                         'No asignado';
+
+  // Verificar si el usuario actual es el creador
+  const esCreador = session?.user?.id === solicitud.created_by_profile?.id;
   
-  const coordinadorNombre = solicitud.coordinador?.raw_user_meta_data?.full_name || 
-                           solicitud.coordinador?.email || 
-                           'No asignado';
+  // Verificar si puede cancelar (es creador y no está en estado final)
+  const puedeCancelar = esCreador && !['aprobado', 'rechazado', 'cancelado'].includes(solicitud.status);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-4"
           >
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
             Volver
@@ -350,14 +443,14 @@ export default function SolicitudDetallePage() {
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Solicitud #{solicitud.id.slice(0, 8)}
               </h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Creada el {new Date(solicitud.created_at).toLocaleDateString('es-CO')}
               </p>
             </div>
-            <EstadoBadge estado={solicitud.estado} />
+            <EstadoBadge estado={solicitud.status} />
           </div>
         </div>
 
@@ -365,50 +458,54 @@ export default function SolicitudDetallePage() {
           {/* Columna Principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Información General */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Información General
               </h2>
               
               <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Tipo</dt>
-                  <dd className="mt-1 text-sm text-gray-900 capitalize">
-                    {solicitud.tipo.replace('_', ' ')}
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipo de Solicitud</dt>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 capitalize">
+                    {solicitud.tipo_solicitud.replace(/_/g, ' ')}
                   </dd>
                 </div>
                 
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Método Ficha Técnica</dt>
-                  <dd className="mt-1 text-sm text-gray-900 capitalize">
-                    {solicitud.metodo_ficha_tecnica}
-                  </dd>
-                </div>
-                
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Funcionario</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{funcionarioNombre}</dd>
-                </div>
-                
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Director</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{directorNombre}</dd>
-                </div>
-                
-                {solicitud.coordinador && (
+                {solicitud.nombre_proyecto && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Coordinador</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{coordinadorNombre}</dd>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Nombre del Proyecto</dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                      {solicitud.nombre_proyecto}
+                    </dd>
+                  </div>
+                )}
+                
+                <div>
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Creado por</dt>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{creadorNombre}</dd>
+                </div>
+                
+                {solicitud.center && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Centro</dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{solicitud.center.name}</dd>
+                  </div>
+                )}
+                
+                {solicitud.assigned_to_profile && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Asignado a</dt>
+                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{asignadoNombre}</dd>
                   </div>
                 )}
               </dl>
 
               {solicitud.observaciones && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
                     Observaciones
                   </h3>
-                  <p className="text-sm text-yellow-700 whitespace-pre-wrap">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">
                     {solicitud.observaciones}
                   </p>
                 </div>
@@ -416,67 +513,78 @@ export default function SolicitudDetallePage() {
             </div>
 
             {/* Documentos */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Documentos Adjuntos
               </h2>
-              <DocumentosList documentos={documentos} solicitudId={solicitudId} />
+              <DocumentosList solicitudId={solicitudId} />
             </div>
 
             {/* Historial */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Historial de Cambios
               </h2>
-              <HistorialTimeline historial={historial} />
+              <HistorialTimeline solicitudId={solicitudId} />
             </div>
           </div>
 
           {/* Columna de Acciones */}
           <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 sticky top-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Acciones
               </h2>
 
               {/* Área de comentarios/observaciones */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Comentario / Observaciones
                 </label>
                 <textarea
                   value={comentario}
                   onChange={(e) => setComentario(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Agregar comentario..."
                 />
               </div>
 
               {/* Acciones según estado */}
               <div className="space-y-3">
-                {/* Director: Recibir solicitud (nuevo → recibido) */}
-                {solicitud.estado === 'nuevo' && (
-                  <button
-                    onClick={handleRecibir}
-                    disabled={actionLoading}
-                    className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    Recibir Solicitud
-                  </button>
-                )}
-
-                {/* Director: Enviar a comité (recibido → en_comite) */}
-                {solicitud.estado === 'recibido' && (
+                {/* Director: Aceptar y enviar a Centro de Servicios (nuevo → recibido) */}
+                {solicitud.status === 'nuevo' && (
                   <>
                     <button
-                      onClick={handleEnviarComite}
+                      onClick={handleRecibir}
+                      disabled={actionLoading}
+                      className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      Aceptar y Enviar a Centro de Servicios
+                    </button>
+                    
+                    <button
+                      onClick={handleRechazar}
+                      disabled={actionLoading}
+                      className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                      <XCircleIcon className="h-5 w-5 mr-2" />
+                      Rechazar
+                    </button>
+                  </>
+                )}
+
+                {/* Centro de Servicios: Solicitar aprobación al comité (recibido → en_comite) */}
+                {solicitud.status === 'recibido' && (
+                  <>
+                    <button
+                      onClick={handleOpenComiteModal}
                       disabled={actionLoading}
                       className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
                     >
                       <PaperAirplaneIcon className="h-5 w-5 mr-2" />
-                      Enviar a Comité
+                      Aceptar y Enviar a Comité
                     </button>
                     
                     <button
@@ -491,17 +599,17 @@ export default function SolicitudDetallePage() {
                 )}
 
                 {/* Comité: Aprobar, Observar o Rechazar (en_comite) */}
-                {solicitud.estado === 'en_comite' && (
+                {solicitud.status === 'en_comite' && (
                   <>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Acta de Comité (requerida para aprobar)
                       </label>
                       <input
                         type="file"
                         accept=".pdf,.doc,.docx"
                         onChange={(e) => setActaFile(e.target.files?.[0] || null)}
-                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
                       />
                     </div>
 
@@ -535,7 +643,7 @@ export default function SolicitudDetallePage() {
                 )}
 
                 {/* Director: Devolver al funcionario (observado → nuevo) */}
-                {solicitud.estado === 'observado' && (
+                {solicitud.status === 'observado' && (
                   <button
                     onClick={handleDevolver}
                     disabled={actionLoading}
@@ -547,16 +655,239 @@ export default function SolicitudDetallePage() {
                 )}
 
                 {/* Estados finales: sin acciones */}
-                {(solicitud.estado === 'aprobado' || solicitud.estado === 'rechazado') && (
-                  <div className="text-center text-sm text-gray-500 py-4">
-                    No hay acciones disponibles para solicitudes {solicitud.estado === 'aprobado' ? 'aprobadas' : 'rechazadas'}
+                {(solicitud.status === 'aprobado' || solicitud.status === 'rechazado' || solicitud.status === 'cancelado') && (
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+                    No hay acciones disponibles para solicitudes {
+                      solicitud.status === 'aprobado' ? 'aprobadas' :
+                      solicitud.status === 'rechazado' ? 'rechazadas' :
+                      'canceladas'
+                    }
                   </div>
+                )}
+
+                {/* Botón de solicitar modificación para el creador */}
+                {puedeCancelar && (
+                  <button
+                    onClick={() => setShowModificacionModal(true)}
+                    disabled={actionLoading}
+                    className="w-full flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 mt-3"
+                  >
+                    <DocumentArrowUpIcon className="h-5 w-5 mr-2" />
+                    Solicitar Modificación
+                  </button>
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal de Solicitud de Modificación */}
+      {showModificacionModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Solicitar Modificación
+            </h3>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Selecciona el motivo por el cual solicitas modificaciones a esta solicitud:
+            </p>
+
+            <div className="space-y-3 mb-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motivo"
+                  value="Información incompleta"
+                  checked={motivoSeleccionado === 'Información incompleta'}
+                  onChange={(e) => setMotivoSeleccionado(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Información incompleta</span>
+              </label>
+
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motivo"
+                  value="Documentos faltantes"
+                  checked={motivoSeleccionado === 'Documentos faltantes'}
+                  onChange={(e) => setMotivoSeleccionado(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Documentos faltantes</span>
+              </label>
+
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motivo"
+                  value="Datos incorrectos"
+                  checked={motivoSeleccionado === 'Datos incorrectos'}
+                  onChange={(e) => setMotivoSeleccionado(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Datos incorrectos</span>
+              </label>
+
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motivo"
+                  value="otro"
+                  checked={motivoSeleccionado === 'otro'}
+                  onChange={(e) => setMotivoSeleccionado(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Otro motivo</span>
+              </label>
+
+              {motivoSeleccionado === 'otro' && (
+                <textarea
+                  value={motivoModificacion}
+                  onChange={(e) => setMotivoModificacion(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Describe el motivo..."
+                />
+              )}
+
+              {/* Campo adicional para descripción detallada */}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Descripción adicional (opcional)
+                </label>
+                <textarea
+                  value={descripcionModificacion}
+                  onChange={(e) => setDescripcionModificacion(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Agrega detalles sobre las modificaciones requeridas..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowModificacionModal(false);
+                  setMotivoModificacion('');
+                  setDescripcionModificacion('');
+                  setMotivoSeleccionado('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                disabled={actionLoading}
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={handleSolicitarModificacion}
+                disabled={actionLoading || !motivoSeleccionado || (motivoSeleccionado === 'otro' && !motivoModificacion.trim())}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50"
+              >
+                {actionLoading ? 'Enviando...' : 'Solicitar Modificación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Selección de Comité */}
+      {showComiteModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Seleccionar Comité
+            </h3>
+            
+            {loadingMeetings ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando comités...</p>
+              </div>
+            ) : meetings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  No hay comités programados aún
+                </p>
+                <button
+                  onClick={() => {
+                    const centerSlug = currentCenter?.slug || 'centro-servicios';
+                    router.push(`/center/${centerSlug}/meetings/create`);
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                >
+                  Crear Nuevo Comité
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Selecciona el comité al que deseas enviar esta solicitud:
+                </p>
+
+                <div className="space-y-2 mb-4">
+                  {meetings.map((meeting) => (
+                    <label
+                      key={meeting.id}
+                      className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        selectedMeetingId === meeting.id
+                          ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="meeting"
+                        value={meeting.id}
+                        checked={selectedMeetingId === meeting.id}
+                        onChange={(e) => setSelectedMeetingId(e.target.value)}
+                        className="mt-1 mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {meeting.title}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          📅 {new Date(meeting.scheduled_at).toLocaleDateString('es-CO', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowComiteModal(false);
+                      setSelectedMeetingId('');
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                    disabled={actionLoading}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleEnviarComite}
+                    disabled={actionLoading || !selectedMeetingId}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {actionLoading ? 'Enviando...' : 'Enviar a Comité'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

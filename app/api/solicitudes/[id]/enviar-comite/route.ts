@@ -19,11 +19,11 @@ export async function PATCH(
 
     const { id: solicitudId } = await params;
     const body = await request.json();
-    const { group_id } = body;
+    const { meeting_id, comentario } = body;
 
-    if (!group_id) {
+    if (!meeting_id) {
       return NextResponse.json(
-        { error: 'Se requiere el ID del comité (group_id)' },
+        { error: 'Se requiere el ID del comité (meeting_id)' },
         { status: 400 }
       );
     }
@@ -58,46 +58,31 @@ export async function PATCH(
     }
 
     // Verificar que el estado actual es 'recibido'
-    if (solicitud.estado !== 'recibido') {
+    if (solicitud.status !== 'recibido') {
       return NextResponse.json(
-        { error: `No se puede enviar al comité una solicitud en estado '${solicitud.estado}'` },
+        { error: `No se puede enviar al comité una solicitud en estado '${solicitud.status}'` },
         { status: 400 }
       );
     }
 
-    // Verificar que el grupo (comité) existe y está activo
-    const { data: group, error: groupError } = await supabase
-      .from('user_groups')
-      .select('*, user_group_members(count)')
-      .eq('id', group_id)
-      .eq('is_active', true)
+    // Verificar que el meeting (comité) existe
+    const { data: meeting, error: meetingError } = await supabase
+      .from('meetings')
+      .select('*, meeting_participants(count)')
+      .eq('id', meeting_id)
       .single();
 
-    if (groupError || !group) {
+    if (meetingError || !meeting) {
       return NextResponse.json(
-        { error: 'Comité no encontrado o inactivo' },
+        { error: 'Comité no encontrado' },
         { status: 404 }
       );
     }
 
-    // Verificar que el comité tiene al menos un miembro
-    if (!group.user_group_members || group.user_group_members.length === 0) {
+    // Verificar que el comité tiene participantes
+    if (!meeting.meeting_participants || meeting.meeting_participants.length === 0) {
       return NextResponse.json(
-        { error: 'El comité no tiene miembros asignados' },
-        { status: 400 }
-      );
-    }
-
-    // Validar transición usando función SQL
-    const { data: validacion, error: validacionError } = await supabase
-      .rpc('validate_solicitud_transition', {
-        p_solicitud_id: solicitudId,
-        p_new_estado: 'en_comite'
-      });
-
-    if (validacionError || !validacion) {
-      return NextResponse.json(
-        { error: 'Transición de estado no válida' },
+        { error: 'El comité no tiene participantes asignados' },
         { status: 400 }
       );
     }
@@ -106,9 +91,8 @@ export async function PATCH(
     const { data: updatedSolicitud, error: updateError } = await supabase
       .from('solicitudes')
       .update({
-        estado: 'en_comite',
-        group_id: group_id,
-        fecha_enviado_comite: new Date().toISOString(),
+        status: 'en_comite',
+        meeting_id: meeting_id,
         updated_at: new Date().toISOString()
       })
       .eq('id', solicitudId)
@@ -123,16 +107,26 @@ export async function PATCH(
       );
     }
 
-    // El trigger automáticamente creará el registro en solicitud_historial
+    // Registrar en el historial
+    await supabase
+      .from('solicitud_historial')
+      .insert({
+        solicitud_id: solicitudId,
+        accion: 'enviado_comite',
+        estado_anterior: 'recibido',
+        estado_nuevo: 'en_comite',
+        comentario: comentario || `Solicitud enviada al comité "${meeting.title}"`,
+        realizado_por: user.id
+      });
 
     // TODO: Enviar notificaciones
-    // 1. A todos los miembros del comité
+    // 1. A todos los participantes del comité
     // 2. Al funcionario que creó la solicitud
 
     return NextResponse.json({
       success: true,
       solicitud: updatedSolicitud,
-      message: `Solicitud enviada al comité "${group.name}" exitosamente`
+      message: `Solicitud enviada al comité "${meeting.title}" exitosamente`
     });
 
   } catch (error) {

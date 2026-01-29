@@ -19,24 +19,50 @@ export async function GET(
 
     const { id: solicitudId } = await params;
 
-    // Obtener documentos de la solicitud
-    const { data: documentos, error: documentosError } = await supabase
-      .from('solicitud_documentos')
-      .select('*')
-      .eq('solicitud_id', solicitudId)
-      .order('created_at', { ascending: true });
+    // Obtener la solicitud con sus paths de documentos
+    const { data: solicitud, error: solicitudError } = await supabase
+      .from('solicitudes')
+      .select('ficha_tecnica_path, formato_003_path, contrato_path, convenio_path, solicitud_coordinadores_path, disminucion_gasto_path, acta_comite_path, resolucion_path')
+      .eq('id', solicitudId)
+      .single();
 
-    if (documentosError) {
-      console.error('Error obteniendo documentos:', documentosError);
+    if (solicitudError) {
+      console.error('Error obteniendo solicitud:', solicitudError);
       return NextResponse.json(
-        { error: 'Error al obtener los documentos' },
+        { error: 'Error al obtener la solicitud' },
         { status: 500 }
       );
     }
 
+    // Construir array de documentos desde los paths
+    const documentos = [];
+    
+    const documentoMap: Record<string, { nombre: string; tipo: string; requerido: boolean }> = {
+      ficha_tecnica_path: { nombre: 'Ficha Técnica', tipo: 'Excel', requerido: false },
+      formato_003_path: { nombre: 'Formato 003', tipo: 'PDF', requerido: true },
+      contrato_path: { nombre: 'Contrato', tipo: 'PDF', requerido: false },
+      convenio_path: { nombre: 'Convenio', tipo: 'PDF', requerido: false },
+      solicitud_coordinadores_path: { nombre: 'Solicitud Coordinadores', tipo: 'PDF', requerido: false },
+      disminucion_gasto_path: { nombre: 'Disminución de Gasto', tipo: 'PDF', requerido: false },
+      acta_comite_path: { nombre: 'Acta de Comité', tipo: 'PDF', requerido: false },
+      resolucion_path: { nombre: 'Resolución', tipo: 'PDF', requerido: false }
+    };
+
+    for (const [key, info] of Object.entries(documentoMap)) {
+      const path = solicitud[key as keyof typeof solicitud];
+      if (path) {
+        documentos.push({
+          nombre: info.nombre,
+          tipo: info.tipo,
+          path: path,
+          requerido: info.requerido
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      documentos: documentos || []
+      documentos
     });
 
   } catch (error) {

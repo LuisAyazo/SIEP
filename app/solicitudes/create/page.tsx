@@ -58,7 +58,10 @@ export default function CreateSolicitudSinCentroPage() {
   };
 
   const handleNext = () => {
-    // El paso 0 (selección de centro) es opcional - se puede saltar
+    if (step === 0 && !selectedCenter) {
+      alert('Por favor seleccione un centro');
+      return;
+    }
     
     if (step === 1 && !tipoSolicitud) {
       alert('Por favor seleccione un tipo de solicitud');
@@ -94,6 +97,11 @@ export default function CreateSolicitudSinCentroPage() {
       // Crear FormData para enviar archivos
       const submitData = new FormData();
       
+      console.log('📋 Iniciando creación de solicitud...');
+      console.log('📄 Tipo de solicitud:', tipoSolicitud);
+      console.log('🏢 Centro seleccionado:', selectedCenter);
+      console.log('📎 Documentos adjuntos:', documentosAdjuntos);
+      
       // Agregar datos básicos
       if (tipoSolicitud) {
         submitData.append('tipo_solicitud', tipoSolicitud);
@@ -109,11 +117,16 @@ export default function CreateSolicitudSinCentroPage() {
       }
       
       // Agregar documentos adjuntos
+      let documentosCount = 0;
       Object.entries(documentosAdjuntos).forEach(([key, file]) => {
         if (file) {
+          console.log(`📎 Agregando documento ${key}:`, file.name, file.size, 'bytes');
           submitData.append(key, file);
+          documentosCount++;
         }
       });
+      
+      console.log(`✅ Total de documentos a enviar: ${documentosCount}`);
       
       // Enviar a la API
       const response = await fetch('/api/solicitudes', {
@@ -215,17 +228,14 @@ export default function CreateSolicitudSinCentroPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* PASO 0: Seleccionar Centro (Opcional) */}
+          {/* PASO 0: Seleccionar Centro */}
           {step === 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 p-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Seleccione el Centro (Opcional)
+                Seleccione el Centro
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                Elija el centro al que desea dirigir su solicitud, o continúe sin seleccionar un centro.
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 mb-6">
-                Si no selecciona un centro, su solicitud será procesada como solicitud externa.
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                Elija el centro al que desea dirigir su solicitud
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -269,13 +279,6 @@ export default function CreateSolicitudSinCentroPage() {
                   className="px-6 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
                 >
                   ← Volver
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-6 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors"
-                >
-                  Continuar sin centro →
                 </button>
               </div>
             </div>
