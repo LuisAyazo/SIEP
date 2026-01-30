@@ -329,8 +329,8 @@ export default function UsuariosAdminPage() {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredUsers.map((user) => (
-                  <>
-                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <React.Fragment key={user.id}>
+                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {user.email}
@@ -432,7 +432,7 @@ export default function UsuariosAdminPage() {
                         </motion.tr>
                       )}
                     </AnimatePresence>
-                  </>
+                  </React.Fragment>
                 ))}
                 
                 {filteredUsers.length === 0 && (
