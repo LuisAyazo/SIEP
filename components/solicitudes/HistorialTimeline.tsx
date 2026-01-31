@@ -11,6 +11,11 @@ export interface HistorialItem {
   user_role: string;
   comentario?: string;
   created_at: string;
+  metadata?: {
+    center_name?: string;
+    assigned_to_center_name?: string;
+    [key: string]: any;
+  };
 }
 
 interface HistorialTimelineProps {
@@ -52,7 +57,7 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
   const getEstadoConfig = (estado: EstadoSolicitud) => {
     const config: Record<EstadoSolicitud, { color: string; icon: string; label: string }> = {
       nuevo: { color: 'bg-blue-500 dark:bg-blue-600', icon: '🆕', label: 'Nuevo' },
-      recibido: { color: 'bg-indigo-500 dark:bg-indigo-600', icon: '📥', label: 'Recibido' },
+      recibido: { color: 'bg-cyan-500 dark:bg-cyan-500', icon: '📥', label: 'Recibido' },
       en_comite: { color: 'bg-purple-500 dark:bg-purple-600', icon: '👥', label: 'En Comité' },
       observado: { color: 'bg-yellow-500 dark:bg-yellow-600', icon: '📝', label: 'Observado' },
       aprobado: { color: 'bg-green-500 dark:bg-green-600', icon: '✅', label: 'Aprobado' },
@@ -75,17 +80,34 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
 
   const getAccionDescripcion = (item: HistorialItem) => {
     if (!item.estado_anterior) {
-      return 'Solicitud creada';
+      const centerName = item.metadata?.center_name;
+      return centerName ? `Solicitud creada en ${centerName}` : 'Solicitud creada';
     }
 
-    // Para rechazos, mostrar "Rechazada por [rol] [nombre]"
+    // Para rechazos, mostrar "Rechazada por [rol]"
     if (item.estado_nuevo === 'rechazado') {
-      return `Rechazada por ${item.user_role} ${item.user_name}`;
+      return `Rechazada por ${item.user_role}`;
+    }
+
+    // Obtener nombres de centros del metadata
+    const centerName = item.metadata?.center_name;
+    const assignedToCenterName = item.metadata?.assigned_to_center_name;
+
+    const key = `${item.estado_anterior}_${item.estado_nuevo}`;
+    
+    // Transiciones con información de centros
+    if (key === 'nuevo_recibido') {
+      return centerName ? `Recibida por ${centerName}` : 'Recibida por el director';
+    }
+    
+    if (key === 'recibido_en_comite') {
+      if (assignedToCenterName) {
+        return `Enviada a comité de ${assignedToCenterName}`;
+      }
+      return 'Enviada a comité';
     }
 
     const transiciones: Record<string, string> = {
-      'nuevo_recibido': 'Recibida por el director',
-      'recibido_en_comite': 'Enviada a comité',
       'en_comite_aprobado': 'Aprobada por el comité',
       'en_comite_observado': 'Devuelta con observaciones',
       'observado_nuevo': 'Devuelta al funcionario para correcciones',
@@ -95,7 +117,6 @@ export default function HistorialTimeline({ historial: historialProp, solicitudI
       'observado_cancelado': 'Cancelada por el creador'
     };
 
-    const key = `${item.estado_anterior}_${item.estado_nuevo}`;
     return transiciones[key] || `Cambio de estado: ${item.estado_anterior} → ${item.estado_nuevo}`;
   };
 

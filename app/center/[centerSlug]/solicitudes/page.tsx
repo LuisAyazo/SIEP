@@ -57,7 +57,10 @@ export default function SolicitudesPage({
   }, [currentCenter, selectedEstado, selectedTipo]);
 
   async function loadSolicitudes() {
-    if (!currentCenter) return;
+    if (!currentCenter) {
+      console.log('[SolicitudesPage] ⚠️ No hay currentCenter, esperando...');
+      return;
+    }
     
     try {
       setLoading(true);
@@ -71,16 +74,29 @@ export default function SolicitudesPage({
         url += `&tipo=${selectedTipo}`;
       }
 
+      console.log('[SolicitudesPage] 🔍 Cargando solicitudes:', {
+        centerName: currentCenter.name,
+        centerId: currentCenter.id,
+        url
+      });
+
       const response = await fetch(url);
       const data = await response.json();
+
+      console.log('[SolicitudesPage] 📡 Response:', {
+        status: response.status,
+        ok: response.ok,
+        data
+      });
 
       if (!response.ok) {
         throw new Error(data.error || 'Error al cargar solicitudes');
       }
 
+      console.log('[SolicitudesPage] ✅ Solicitudes cargadas:', data.solicitudes?.length || 0);
       setSolicitudes(data.solicitudes || []);
     } catch (err: any) {
-      console.error('Error:', err);
+      console.error('[SolicitudesPage] ❌ Error:', err);
       setError(err.message);
     } finally {
       setLoading(false);

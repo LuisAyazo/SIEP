@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
+  const redirectTo = requestUrl.searchParams.get('redirectTo')
   const origin = requestUrl.origin
 
   console.log('========================================')
@@ -182,23 +183,30 @@ export async function GET(request: Request) {
         console.log('[Auth Callback] ✅ Perfil ya existe en BD:', existingProfile)
       }
 
-      // Obtener el centro por defecto desde la base de datos
-      const { data: centers } = await supabase
-        .from('centers')
-        .select('slug')
-        .order('name')
-        .limit(1)
+      // Determinar la URL de redirección
+      let redirectUrl: string;
       
-      const centerSlug = centers?.[0]?.slug || 'centro-educacion-continua'
-
-      console.log('[Auth Callback] 🚀 Redirigiendo a dashboard:', {
-        centerSlug,
-        url: `${origin}/center/${centerSlug}/dashboard`
-      })
+      if (redirectTo) {
+        // Si hay un redirectTo, usarlo
+        redirectUrl = `${origin}${redirectTo}`;
+        console.log('[Auth Callback] 🚀 Redirigiendo a URL solicitada:', redirectUrl)
+      } else {
+        // Obtener el centro por defecto desde la base de datos
+        const { data: centers } = await supabase
+          .from('centers')
+          .select('slug')
+          .order('name')
+          .limit(1)
+        
+        const centerSlug = centers?.[0]?.slug || 'centro-educacion-continua'
+        redirectUrl = `${origin}/center/${centerSlug}/dashboard`;
+        console.log('[Auth Callback] 🚀 Redirigiendo a dashboard por defecto:', redirectUrl)
+      }
+      
       console.log('========================================')
 
-      // Redirigir al dashboard del centro
-      return NextResponse.redirect(`${origin}/center/${centerSlug}/dashboard`)
+      // Redirigir
+      return NextResponse.redirect(redirectUrl)
     } else {
       console.error('[Auth Callback] ❌ No hay sesión o usuario después del exchange')
       console.log('========================================')

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useCenterContext } from "@/components/providers/CenterContext";
 import { useSupabaseSession } from "@/components/providers/SessionProvider";
 import { FileText, FolderOpen, Moon, Sun } from "lucide-react";
@@ -13,6 +13,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 export default function Home() {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const { availableCenters, currentCenter, loading: centersLoading } = useCenterContext();
   const { session, loading: authLoading } = useSupabaseSession();
@@ -89,30 +90,24 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // console.log('[HomePage] Estado:', {
-    //   authLoading,
-    //   centersLoading,
-    //   hasSession: !!session,
-    //   availableCentersCount: availableCenters.length,
-    //   showNoCenterView,
-    //   hasRedirected
-    // });
+    // 🔥 CRÍTICO: Solo ejecutar redirección si estamos EXACTAMENTE en la ruta "/"
+    // Esto previene que se ejecute cuando el usuario está en otras rutas
+    if (pathname !== '/') {
+      return;
+    }
 
     // 🔥 PREVENIR LOOP: Si ya redirigimos, no hacer nada más
     if (hasRedirected) {
-      // console.log('[HomePage] ⏭️ Ya se redirigió, saltando...');
       return;
     }
 
     // Esperar a que termine de cargar la autenticación
     if (authLoading) {
-      // console.log('[HomePage] Esperando autenticación...');
       return;
     }
 
     // Si no hay sesión, redirigir a login inmediatamente
     if (!session) {
-      // console.log('[HomePage] No hay sesión, redirigiendo a login');
       setHasRedirected(true);
       router.replace('/login');
       return;
@@ -120,13 +115,11 @@ export default function Home() {
 
     // Si hay sesión pero aún están cargando los centros, esperar
     if (centersLoading) {
-      // console.log('[HomePage] Esperando centros...');
       return;
     }
 
     // Si hay centros disponibles, redirigir al dashboard del centro INMEDIATAMENTE
     if (availableCenters.length > 0) {
-      // console.log('[HomePage] Hay centros, redirigiendo al dashboard');
       const centerToUse = currentCenter || availableCenters[0];
       const slug = centerToUse.slug || centerToUse.name.toLowerCase().replace(/ /g, '-');
       
@@ -141,10 +134,9 @@ export default function Home() {
       return; // Importante: salir inmediatamente
     } else {
       // No hay centros asignados, mostrar vista especial
-      // console.log('[HomePage] No hay centros, mostrando vista especial');
       setShowNoCenterView(true);
     }
-  }, [availableCenters, currentCenter, router, session, authLoading, centersLoading, hasRedirected]);
+  }, [pathname, availableCenters, currentCenter, router, session, authLoading, centersLoading, hasRedirected]);
 
   // Vista de carga - mostrar loader profesional
   if (authLoading) {

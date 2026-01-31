@@ -32,6 +32,7 @@ export default function SettingsLayout({
   // Define navigation items for settings
   const navItems = [
     { name: 'Centros', href: '/settings/centers' },
+    { name: 'Integraciones', href: '/settings/integrations' },
     // Agregar más opciones de configuración global según sea necesario
   ];
 

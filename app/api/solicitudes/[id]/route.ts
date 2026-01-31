@@ -73,7 +73,7 @@ export async function GET(
 
     // Verificar permisos (RLS se encarga de esto también)
     if (solicitud.created_by !== user.id) {
-      // Verificar si es director del centro
+      // Verificar si es director del centro o administrador
       const { data: userRole } = await supabase
         .from('user_roles')
         .select('roles(name)')
@@ -82,22 +82,24 @@ export async function GET(
 
       const roleName = (userRole as any)?.roles?.name
       
-      if (roleName !== 'administrador') {
+      if (roleName !== 'administrador' && roleName !== 'director_centro') {
         return NextResponse.json(
           { error: 'No tienes permiso para ver esta solicitud' },
           { status: 403 }
         )
       }
 
-      // Verificar que sea del mismo centro
-      const { data: userCenter } = await supabase
+      // Verificar que sea del mismo centro O que esté asignada a su centro
+      const { data: userCenters } = await supabase
         .from('user_centers')
         .select('center_id')
         .eq('user_id', user.id)
-        .eq('center_id', solicitud.center_id)
-        .single()
 
-      if (!userCenter) {
+      const centerIds = userCenters?.map(uc => uc.center_id) || []
+      const hasAccess = centerIds.includes(solicitud.center_id) ||
+                       (solicitud.assigned_to_center_id && centerIds.includes(solicitud.assigned_to_center_id))
+
+      if (!hasAccess) {
         return NextResponse.json(
           { error: 'No tienes permiso para ver esta solicitud' },
           { status: 403 }

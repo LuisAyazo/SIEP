@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createCalendarEvent } from '@/lib/google-calendar/client';
 
 // GET /api/meetings - Listar reuniones del centro del usuario
 export async function GET(request: NextRequest) {
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
     const centerId = searchParams.get('center_id');
     const status = searchParams.get('status');
     const meetingType = searchParams.get('meeting_type');
+    const futureOnly = searchParams.get('future_only'); // Nuevo parámetro
 
     // Construir query base
     let query = supabase
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
           user:profiles(id, email, full_name)
         )
       `)
-      .order('scheduled_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     // Aplicar filtros
     if (centerId) {
@@ -49,6 +51,12 @@ export async function GET(request: NextRequest) {
 
     if (meetingType) {
       query = query.eq('meeting_type', meetingType);
+    }
+
+    // Filtrar solo comités futuros (desde hoy en adelante)
+    if (futureOnly === 'true') {
+      const now = new Date().toISOString();
+      query = query.gte('scheduled_at', now);
     }
 
     const { data: meetings, error } = await query;
@@ -115,7 +123,8 @@ export async function POST(request: NextRequest) {
       center_id,
       meeting_platform,
       meeting_url,
-      participant_ids = []
+      participant_ids = [],
+      external_emails = []
     } = body;
 
     // Validar campos requeridos
@@ -163,6 +172,12 @@ export async function POST(request: NextRequest) {
 
     // Agregar participantes si fueron proporcionados
     if (participant_ids.length > 0) {
+      console.log('[Meetings POST] Agregando participantes:', {
+        count: participant_ids.length,
+        ids: participant_ids,
+        meetingId: meeting.id
+      });
+
       const participants = participant_ids.map((userId: string) => ({
         meeting_id: meeting.id,
         user_id: userId,
@@ -170,9 +185,74 @@ export async function POST(request: NextRequest) {
         attendance_status: 'invited'
       }));
 
-      await supabase
+      const { data: insertedParticipants, error: participantsError } = await supabase
         .from('meeting_participants')
-        .insert(participants);
+        .insert(participants)
+        .select();
+
+      if (participantsError) {
+        console.error('[Meetings POST] Error al insertar participantes:', participantsError);
+      } else {
+        console.log('[Meetings POST] Participantes insertados exitosamente:', insertedParticipants?.length);
+      }
+    } else {
+      console.log('[Meetings POST] No se proporcionaron participant_ids');
+    }
+
+    // Intentar sincronizar con Google Calendar si el usuario tiene tokens
+    let googleEventId: string | null = null;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('google_access_token, google_refresh_token, email')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.google_access_token) {
+        // Obtener emails de los participantes internos
+        const { data: participants } = await supabase
+          .from('meeting_participants')
+          .select('user:profiles(email)')
+          .eq('meeting_id', meeting.id);
+
+        const internalEmails = participants?.map((p: any) => p.user?.email).filter(Boolean) || [];
+        
+        // Combinar emails internos y externos
+        const attendeeEmails = [...internalEmails, ...external_emails];
+
+        // Calcular fecha de fin
+        const startDate = new Date(scheduled_at);
+        const endDate = new Date(startDate.getTime() + duration_minutes * 60000);
+
+        // Crear evento en Google Calendar
+        const googleEvent = await createCalendarEvent(
+          profile.google_access_token,
+          profile.google_refresh_token,
+          {
+            summary: title,
+            description: description || '',
+            location: meeting_url || '',
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+            attendees: attendeeEmails,
+          }
+        );
+
+        googleEventId = googleEvent.id || null;
+
+        // Guardar el ID del evento de Google Calendar
+        if (googleEventId) {
+          await supabase
+            .from('meetings')
+            .update({ google_calendar_event_id: googleEventId })
+            .eq('id', meeting.id);
+        }
+
+        console.log('✅ Evento sincronizado con Google Calendar:', googleEventId);
+      }
+    } catch (calendarError) {
+      // No fallar si hay error con Google Calendar, solo registrar
+      console.error('⚠️ Error al sincronizar con Google Calendar:', calendarError);
     }
 
     // Obtener reunión completa con relaciones
@@ -181,7 +261,7 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         center:centers(id, name, slug),
-        created_by_user:profiles!created_by(id, email, full_name),
+        created_by_user:profiles!meetings_created_by_fkey(id, email, full_name),
         meeting_participants(
           id,
           role,
@@ -193,7 +273,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     return NextResponse.json(
-      { meeting: fullMeeting, message: 'Reunión creada exitosamente' },
+      {
+        meeting: fullMeeting,
+        message: 'Reunión creada exitosamente',
+        google_synced: !!googleEventId
+      },
       { status: 201 }
     );
 

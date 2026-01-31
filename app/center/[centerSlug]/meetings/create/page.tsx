@@ -26,6 +26,10 @@ export default function CreateMeetingPage({
   const [users, setUsers] = useState<User[]>([]);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [showGoogleBanner, setShowGoogleBanner] = useState(true);
+  const [externalEmails, setExternalEmails] = useState<string[]>([]);
+  const [newExternalEmail, setNewExternalEmail] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -39,7 +43,39 @@ export default function CreateMeetingPage({
   useEffect(() => {
     loadCenter();
     loadUsers();
+    checkGoogleConnection();
   }, []);
+
+  async function checkGoogleConnection() {
+    try {
+      const response = await fetch('/api/google/status');
+      if (response.ok) {
+        const data = await response.json();
+        setGoogleConnected(data.connected);
+      }
+    } catch (err) {
+      console.error('Error al verificar Google Calendar:', err);
+    }
+  }
+
+  async function handleConnectGoogle() {
+    try {
+      // Pasar la URL actual como returnUrl
+      const currentUrl = window.location.pathname;
+      const response = await fetch(`/api/google/auth?returnUrl=${encodeURIComponent(currentUrl)}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener URL de autenticación');
+      }
+
+      const data = await response.json();
+      
+      // Redirigir a Google para autenticación
+      window.location.href = data.authUrl;
+    } catch (error) {
+      console.error('Error al conectar Google Calendar:', error);
+      setError('Error al iniciar conexión con Google Calendar');
+    }
+  }
 
   async function loadCenter() {
     try {
@@ -99,6 +135,31 @@ export default function CreateMeetingPage({
     );
   });
 
+  function addExternalEmail() {
+    const email = newExternalEmail.trim();
+    if (!email) return;
+    
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('Por favor ingresa un email válido');
+      return;
+    }
+    
+    // Verificar que no esté duplicado
+    if (externalEmails.includes(email)) {
+      alert('Este email ya fue agregado');
+      return;
+    }
+    
+    setExternalEmails(prev => [...prev, email]);
+    setNewExternalEmail('');
+  }
+
+  function removeExternalEmail(email: string) {
+    setExternalEmails(prev => prev.filter(e => e !== email));
+  }
+
   // Generar link de Google Meet automáticamente
   const generateGoogleMeetLink = (): string => {
     const startDate = new Date(formData.scheduled_at);
@@ -108,10 +169,12 @@ export default function CreateMeetingPage({
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     };
 
-    const participantEmails = selectedParticipants
+    const internalEmails = selectedParticipants
       .map(id => users.find(u => u.id === id)?.email)
-      .filter(Boolean)
-      .join(',');
+      .filter(Boolean);
+    
+    const allEmails = [...internalEmails, ...externalEmails];
+    const participantEmails = allEmails.join(',');
 
     const params = new URLSearchParams({
       action: 'TEMPLATE',
@@ -157,7 +220,8 @@ export default function CreateMeetingPage({
           center_id: centerId,
           meeting_platform: formData.meeting_platform || null,
           meeting_url: meetingUrl || null,
-          participant_ids: selectedParticipants
+          participant_ids: selectedParticipants,
+          external_emails: externalEmails
         })
       });
 
@@ -167,7 +231,7 @@ export default function CreateMeetingPage({
         throw new Error(data.error || 'Error al crear comité');
       }
 
-      router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings`);
+      router.push(`/center/${resolvedParams.centerSlug}/meetings`);
     } catch (err: any) {
       console.error('Error:', err);
       setError(err.message);
@@ -197,6 +261,56 @@ export default function CreateMeetingPage({
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           {error}
+        </div>
+      )}
+
+      {/* Banner de Google Calendar */}
+      {!googleConnected && showGoogleBanner && (
+        <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 48 48">
+                  <path fill="currentColor" d="M24,4C13,4,4,13,4,24s9,20,20,20s20-9,20-20S35,4,24,4z"/>
+                  <path fill="#FFF" d="M33.14,25.59c0-0.59-0.05-1.16-0.14-1.71H24v3.23h5.11c-0.22,1.19-0.9,2.2-1.91,2.87v2.69h3.09C32.19,30.89,33.14,28.47,33.14,25.59z"/>
+                  <path fill="#FFF" d="M24,34c2.43,0,4.47-0.8,5.96-2.18l-2.91-2.26c-0.81,0.54-1.84,0.86-3.05,0.86c-2.35,0-4.34-1.59-5.05-3.72h-3.01v2.33C17.43,31.97,20.48,34,24,34z"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-50 mb-1">
+                  Sincroniza con Google Calendar
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-100 mb-3">
+                  Conecta tu cuenta de Google para que tus reuniones se agreguen automáticamente a tu calendario y los participantes reciban invitaciones.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleConnectGoogle}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-md transition-colors"
+                  >
+                    Conectar ahora
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleBanner(false)}
+                    className="px-3 py-1.5 text-blue-700 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm font-medium rounded-md transition-colors"
+                  >
+                    Recordar después
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGoogleBanner(false)}
+              className="flex-shrink-0 text-blue-400 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-100"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
@@ -353,7 +467,7 @@ export default function CreateMeetingPage({
             <Users className="w-5 h-5" />
             Participantes
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-normal">
-              ({selectedParticipants.length} seleccionados)
+              ({selectedParticipants.length} internos, {externalEmails.length} externos)
             </span>
           </h2>
 
@@ -368,6 +482,10 @@ export default function CreateMeetingPage({
             />
             <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
           </div>
+
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Participantes de la organización
+          </p>
 
           <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
             {filteredUsers.length === 0 ? (
@@ -392,6 +510,58 @@ export default function CreateMeetingPage({
                   </div>
                 </label>
               ))
+            )}
+          </div>
+
+          {/* Participantes Externos */}
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Participantes externos (fuera de la organización)
+            </h3>
+            
+            <div className="flex gap-2 mb-3">
+              <input
+                type="email"
+                value={newExternalEmail}
+                onChange={(e) => setNewExternalEmail(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addExternalEmail();
+                  }
+                }}
+                placeholder="correo@ejemplo.com"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white bg-white dark:bg-gray-700 text-sm"
+              />
+              <button
+                type="button"
+                onClick={addExternalEmail}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Agregar
+              </button>
+            </div>
+
+            {externalEmails.length > 0 && (
+              <div className="space-y-2">
+                {externalEmails.map((email, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+                  >
+                    <span className="text-sm text-gray-900 dark:text-white">{email}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeExternalEmail(email)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

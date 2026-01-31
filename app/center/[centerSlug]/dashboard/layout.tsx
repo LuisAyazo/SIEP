@@ -395,7 +395,7 @@ export default function DashboardLayout({
           granularPermission: GRANULAR_PERMISSIONS.MEETINGS_READ
         }] : []),
         {
-          name: userRole === 'funcionario' ? "Mis Solicitudes" : "Solicitudes",
+          name: "Solicitudes",
           href: `/center/${centerSlug}/solicitudes`,
           icon: (
             <svg

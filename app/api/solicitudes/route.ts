@@ -65,6 +65,15 @@ export async function GET(request: NextRequest) {
 
     const roleName = (userRole as any)?.roles?.name
 
+    console.log('🔍 DEBUG - Solicitudes GET:', {
+      userId: user.id,
+      userEmail: user.email,
+      roleName,
+      centerId,
+      userOnly,
+      externalOnly
+    });
+
     // Construir query base
     let query = supabase
       .from('solicitudes')
@@ -113,30 +122,49 @@ export async function GET(request: NextRequest) {
       query = query.eq('created_by', user.id).is('center_id', null)
     }
     // Aplicar filtros según el rol
-    else if (roleName === 'funcionario' || userOnly) {
-      // Funcionarios solo ven sus propias solicitudes
+    else if (userOnly) {
+      // Si se solicita explícitamente solo las del usuario
       query = query.eq('created_by', user.id)
-    } else if (roleName === 'director' || roleName === 'administrador') {
-      // Directores ven solicitudes de su centro
+    } else {
+      // TODOS los usuarios (funcionarios, directores, administradores) ven:
+      // 1. Solicitudes de su centro (center_id)
+      // 2. Solicitudes asignadas a su centro (assigned_to_center_id)
       const { data: userCenters } = await supabase
         .from('user_centers')
         .select('center_id')
         .eq('user_id', user.id)
 
+      console.log('🔍 DEBUG - User Centers:', userCenters);
+
       if (userCenters && userCenters.length > 0) {
         const centerIds = userCenters.map(uc => uc.center_id)
-        query = query.in('center_id', centerIds)
-      }
-    } else {
-      // Verificar si es miembro de algún comité
-      const { data: userGroups } = await supabase
-        .from('user_group_members')
-        .select('group_id')
-        .eq('user_id', user.id)
+        
+        // Si se especifica un centerId en el query, filtrar solo por ese centro
+        // pero manteniendo el OR para center_id y assigned_to_center_id
+        if (centerId && centerIds.includes(centerId)) {
+          const orFilter = `center_id.eq.${centerId},assigned_to_center_id.eq.${centerId}`
+          console.log('🔍 DEBUG - OR Filter (specific center):', orFilter);
+          query = query.or(orFilter)
+        } else if (!centerId) {
+          // Si no se especifica centerId, mostrar todos los centros del usuario
+          const orFilter = `center_id.in.(${centerIds.join(',')}),assigned_to_center_id.in.(${centerIds.join(',')})`
+          console.log('🔍 DEBUG - OR Filter (all centers):', orFilter);
+          query = query.or(orFilter)
+        }
+      } else if (roleName === 'funcionario') {
+        // Si el funcionario no tiene centros asignados, solo ve sus propias solicitudes
+        query = query.eq('created_by', user.id)
+      } else {
+        // Verificar si es miembro de algún comité
+        const { data: userGroups } = await supabase
+          .from('user_group_members')
+          .select('group_id')
+          .eq('user_id', user.id)
 
-      if (userGroups && userGroups.length > 0) {
-        const groupIds = userGroups.map(ug => ug.group_id)
-        query = query.in('comite_id', groupIds)
+        if (userGroups && userGroups.length > 0) {
+          const groupIds = userGroups.map(ug => ug.group_id)
+          query = query.in('comite_id', groupIds)
+        }
       }
     }
 
@@ -145,9 +173,10 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     }
 
-    if (centerId) {
-      query = query.eq('center_id', centerId)
-    }
+    // NO aplicar filtro de centerId aquí porque ya se manejó arriba
+    // if (centerId) {
+    //   query = query.eq('center_id', centerId)
+    // }
 
     if (priority) {
       query = query.eq('priority', priority)
@@ -165,6 +194,21 @@ export async function GET(request: NextRequest) {
     query = query.range(offset, offset + limit - 1)
 
     const { data: solicitudes, error, count } = await query
+
+    console.log('🔍 DEBUG - Query Results:', {
+      count,
+      solicitudesLength: solicitudes?.length || 0,
+      error: error?.message
+    });
+
+    if (solicitudes && solicitudes.length > 0) {
+      console.log('🔍 DEBUG - Primera solicitud:', {
+        id: solicitudes[0].id,
+        center_id: solicitudes[0].center_id,
+        assigned_to_center_id: solicitudes[0].assigned_to_center_id,
+        status: solicitudes[0].status
+      });
+    }
 
     if (error) {
       console.error('[API] Error al obtener solicitudes:', error)

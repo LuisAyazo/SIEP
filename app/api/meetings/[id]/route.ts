@@ -31,7 +31,6 @@ export async function GET(
           id,
           role,
           attendance_status,
-          notes,
           user:profiles(id, email, full_name)
         )
       `)
@@ -45,6 +44,17 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    console.log('[Meetings GET] Reunión obtenida:', {
+      id: meeting.id,
+      title: meeting.title,
+      participantCount: meeting.meeting_participants?.length || 0,
+      participants: meeting.meeting_participants?.map((p: any) => ({
+        id: p.id,
+        email: p.user?.email,
+        role: p.role
+      }))
+    });
 
     return NextResponse.json({ meeting }, { status: 200 });
 

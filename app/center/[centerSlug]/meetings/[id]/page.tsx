@@ -154,7 +154,7 @@ export default function MeetingDetailPage({
         throw new Error(data.error || 'Error al cancelar comité');
       }
 
-      router.push(`/center/${resolvedParams.centerSlug}/dashboard/meetings`);
+      router.push(`/center/${resolvedParams.centerSlug}/meetings`);
     } catch (err: any) {
       console.error('Error:', err);
       alert(err.message);
@@ -263,13 +263,13 @@ export default function MeetingDetailPage({
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{meeting.title}</h1>
-            <p className="text-gray-600 mt-1">Detalles del comité</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{meeting.title}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Detalles del comité</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -290,12 +290,12 @@ export default function MeetingDetailPage({
         {/* Columna principal */}
         <div className="lg:col-span-2 space-y-6">
           {/* Información de la reunión */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Información</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Información</h2>
             
             {meeting.description && (
               <div>
-                <p className="text-gray-700">{meeting.description}</p>
+                <p className="text-gray-700 dark:text-gray-300">{meeting.description}</p>
               </div>
             )}
 
@@ -303,16 +303,16 @@ export default function MeetingDetailPage({
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">Fecha</p>
-                  <p className="font-medium text-gray-900 capitalize">{date}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Fecha</p>
+                  <p className="font-medium text-gray-900 dark:text-white capitalize">{date}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">Hora</p>
-                  <p className="font-medium text-gray-900">{time} ({meeting.duration_minutes} min)</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Hora</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{time} ({meeting.duration_minutes} min)</p>
                 </div>
               </div>
 
@@ -320,8 +320,8 @@ export default function MeetingDetailPage({
                 <div className="flex items-start gap-3">
                   <Video className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500">Plataforma</p>
-                    <p className="font-medium text-gray-900">{meeting.meeting_platform}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Plataforma</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{meeting.meeting_platform}</p>
                   </div>
                 </div>
               )}
@@ -329,8 +329,8 @@ export default function MeetingDetailPage({
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">Centro</p>
-                  <p className="font-medium text-gray-900">{meeting.center.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Centro</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{meeting.center.name}</p>
                 </div>
               </div>
             </div>
@@ -352,9 +352,9 @@ export default function MeetingDetailPage({
           </div>
 
           {/* Participantes */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Users className="w-5 h-5" />
                 Participantes ({meeting.meeting_participants.length})
               </h2>
@@ -364,7 +364,7 @@ export default function MeetingDetailPage({
               {meeting.meeting_participants.map(participant => (
                 <div
                   key={participant.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -373,8 +373,8 @@ export default function MeetingDetailPage({
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{participant.user.full_name}</p>
-                      <p className="text-sm text-gray-500">{participant.user.email}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{participant.user.full_name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{participant.user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -395,8 +395,8 @@ export default function MeetingDetailPage({
         <div className="space-y-6">
           {/* Mi estado */}
           {currentParticipant && meeting.status === 'scheduled' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Mi Respuesta</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Mi Respuesta</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => handleUpdateAttendance('accepted')}
@@ -404,7 +404,7 @@ export default function MeetingDetailPage({
                   className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     currentParticipant.attendance_status === 'accepted'
                       ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -416,7 +416,7 @@ export default function MeetingDetailPage({
                   className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     currentParticipant.attendance_status === 'maybe'
                       ? 'bg-yellow-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <AlertCircle className="w-4 h-4" />
@@ -428,7 +428,7 @@ export default function MeetingDetailPage({
                   className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     currentParticipant.attendance_status === 'declined'
                       ? 'bg-red-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <XCircle className="w-4 h-4" />
@@ -439,8 +439,8 @@ export default function MeetingDetailPage({
           )}
 
           {/* Organizador */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Organizador</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Organizador</h3>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <span className="text-purple-700 font-semibold text-lg">
@@ -448,8 +448,8 @@ export default function MeetingDetailPage({
                 </span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">{meeting.created_by_user.full_name}</p>
-                <p className="text-sm text-gray-500">{meeting.created_by_user.email}</p>
+                <p className="font-medium text-gray-900 dark:text-white">{meeting.created_by_user.full_name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{meeting.created_by_user.email}</p>
               </div>
             </div>
           </div>

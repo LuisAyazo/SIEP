@@ -12,9 +12,10 @@ interface StatusStepsProps {
   currentStatus: string;
   historial?: HistorialEntry[];
   compact?: boolean;
+  centerName?: string; // Nombre del centro que creó la solicitud
 }
 
-const BASE_STATUS_FLOW = [
+const getBaseStatusFlow = (centerName?: string) => [
   {
     key: 'nuevo',
     label: 'Solicitud Creada',
@@ -23,7 +24,7 @@ const BASE_STATUS_FLOW = [
   },
   {
     key: 'recibido',
-    label: 'Recibida por Centro',
+    label: centerName ? `Recibida por ${centerName}` : 'Recibida por Centro',
     description: 'El centro ha recibido tu solicitud',
     icon: Check
   },
@@ -41,7 +42,8 @@ const BASE_STATUS_FLOW = [
   }
 ];
 
-export default function StatusSteps({ currentStatus, historial = [], compact = false }: StatusStepsProps) {
+export default function StatusSteps({ currentStatus, historial = [], compact = false, centerName }: StatusStepsProps) {
+  const BASE_STATUS_FLOW = getBaseStatusFlow(centerName);
   const isRejectedOrCancelled = ['rechazado', 'cancelado'].includes(currentStatus);
   
   // Determinar el último estado válido antes del rechazo/cancelación
@@ -136,7 +138,11 @@ export default function StatusSteps({ currentStatus, historial = [], compact = f
           className={`absolute ${compact ? 'top-3' : 'top-5'} left-0 h-0.5 bg-blue-600 dark:bg-blue-500 transition-all duration-500`}
           style={{
             left: compact ? '1rem' : '2rem',
-            width: `calc(${(currentStepIndex / (STATUS_FLOW.length - 1)) * 100}% - ${compact ? '1rem' : '2rem'})`
+            // Para "recibido", mostrar 50% de progreso (mitad entre recibido y comité)
+            // Para otros estados, usar el cálculo normal
+            width: currentStatus === 'recibido'
+              ? `calc(50% - ${compact ? '1rem' : '2rem'})`
+              : `calc(${(currentStepIndex / (STATUS_FLOW.length - 1)) * 100}% - ${compact ? '1rem' : '2rem'})`
           }}
         />
 

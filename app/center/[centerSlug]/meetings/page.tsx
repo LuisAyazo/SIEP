@@ -297,29 +297,29 @@ export default function MeetingsPage({
             return (
               <div
                 key={meeting.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/center/${resolvedParams.centerSlug}/meetings/${meeting.id}`)}
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {meeting.title}
                       </h3>
                       {getStatusBadge(meeting.status)}
                       {isOrganizer && (
-                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full">
+                        <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full">
                           Organizador
                         </span>
                       )}
                     </div>
                     {meeting.description && (
-                      <p className="text-gray-600 dark:text-gray-400 mb-3">{meeting.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{meeting.description}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
                     {date}
@@ -334,15 +334,14 @@ export default function MeetingsPage({
                   </div>
                 </div>
 
-                {meeting.meeting_url && (
-                  <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-4">
-                    <Video className="w-4 h-4" />
-                    <span className="font-medium">{meeting.meeting_platform || 'Comité virtual'}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>Organizado por {meeting.created_by_user.full_name}</span>
+                  {meeting.meeting_url && (
+                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <Video className="w-3 h-3" />
+                      <span className="font-medium">{meeting.meeting_platform || 'Virtual'}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

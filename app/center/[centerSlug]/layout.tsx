@@ -20,8 +20,9 @@ export default function CenterLayout({
       return;
     }
 
-    // Si el usuario no tiene centros asignados, redirigir a la página principal
-    if (availableCenters.length === 0) {
+    // IMPORTANTE: Solo redirigir si NO está cargando Y realmente no hay centros
+    // Esto previene redirects durante la carga inicial
+    if (!loading && availableCenters.length === 0) {
       console.log('[CenterLayout] ⚠️ Usuario sin centros asignados, redirigiendo a /');
       router.replace('/');
       return;
@@ -49,14 +50,10 @@ export default function CenterLayout({
       // console.log(`[CenterLayout] 🔄 Centro encontrado, actualizando: ${foundCenter.name} (ID: ${foundCenter.id})`);
       setCenter(foundCenter);
     } else {
-      // Si no se encuentra el centro, solo redirigir si no hay centro actual
-      // Esto evita redirecciones innecesarias cuando el usuario navega directamente a una URL
-      if (!currentCenter) {
-        console.log(`[CenterLayout] ❌ No se encontró centro con slug: ${slugToFind}. Redirigiendo al primero disponible.`);
-        const firstCenter = availableCenters[0];
-        const slug = firstCenter.slug;
-        router.replace(`/center/${slug}/dashboard`);
-      }
+      // Si no se encuentra el centro, verificar si el usuario tiene acceso a algún centro
+      // Solo redirigir si realmente no tiene acceso, no por problemas de timing
+      console.log(`[CenterLayout] ⚠️ No se encontró centro con slug: ${slugToFind}`);
+      // No redirigir automáticamente - dejar que el usuario vea el error o que RLS maneje el acceso
     }
   }, [centerSlug, availableCenters, setCenter, currentCenter, router, loading]);
 

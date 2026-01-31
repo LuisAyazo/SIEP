@@ -3,6 +3,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "../components/providers/SessionProvider";
 import { CenterProvider } from "../components/providers/CenterContext";
+import GoogleCalendarNotification from "../components/GoogleCalendarNotification";
 
 // Reemplazamos Geist con Inter para mayor compatibilidad
 const inter = Inter({
@@ -36,6 +37,7 @@ export default function RootLayout({
         <SessionProvider>
           <CenterProvider>
             {children}
+            <GoogleCalendarNotification />
           </CenterProvider>
         </SessionProvider>
       </body>

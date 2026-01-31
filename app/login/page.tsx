@@ -41,9 +41,12 @@ function LoginForm() {
   };
 
   useEffect(() => {
+    console.log('[Login] Estado de sesión:', { loading, hasSession: !!session, sessionUser: session?.user?.email });
+    
     // Si ya está autenticado, redireccionar al dashboard específico del centro
     if (!loading && session) {
       const centerSlug = getDefaultCenterSlug();
+      console.log('[Login] Usuario ya autenticado, redirigiendo a:', `/center/${centerSlug}/dashboard`);
       router.push(`/center/${centerSlug}/dashboard`);
     }
     

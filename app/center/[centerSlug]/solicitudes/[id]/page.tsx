@@ -172,7 +172,8 @@ export default function SolicitudDetallePage() {
         throw new Error(error.error || 'Error al recibir solicitud');
       }
 
-      alert('Solicitud recibida exitosamente');
+      const data = await response.json();
+      alert(data.message || 'Solicitud enviada exitosamente al centro de servicios');
       setComentario('');
       loadSolicitud();
       loadHistorial();
@@ -189,7 +190,7 @@ export default function SolicitudDetallePage() {
     
     setLoadingMeetings(true);
     try {
-      const response = await fetch(`/api/meetings?center_id=${currentCenter.id}&status=scheduled`);
+      const response = await fetch(`/api/meetings?center_id=${currentCenter.id}&status=scheduled&future_only=true`);
       if (!response.ok) throw new Error('Error al cargar comités');
       const data = await response.json();
       setMeetings(data.meetings || []);
@@ -488,6 +489,7 @@ export default function SolicitudDetallePage() {
             currentStatus={solicitud.status}
             historial={historialSteps}
             compact={true}
+            centerName={solicitud.center?.name}
           />
         </div>
 
@@ -519,7 +521,14 @@ export default function SolicitudDetallePage() {
                 
                 <div>
                   <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Creado por</dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{creadorNombre}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                    {creadorNombre}
+                    {solicitud.created_by_profile?.email && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {solicitud.created_by_profile.email}
+                      </div>
+                    )}
+                  </dd>
                 </div>
                 
                 {solicitud.center && (
@@ -624,7 +633,7 @@ export default function SolicitudDetallePage() {
                 )}
 
                 {/* Centro de Servicios: Solicitar aprobación al comité (recibido → en_comite) */}
-                {solicitud.status === 'recibido' && (
+                {solicitud.status === 'recibido' && currentCenter?.slug === 'centro-servicios' && (
                   <>
                     <button
                       onClick={handleOpenComiteModal}
@@ -732,8 +741,19 @@ export default function SolicitudDetallePage() {
 
       {/* Modal de Solicitud de Modificación */}
       {showModificacionModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowModificacionModal(false);
+            setMotivoModificacion('');
+            setDescripcionModificacion('');
+            setMotivoSeleccionado('');
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Solicitar Modificación
             </h3>
@@ -843,11 +863,31 @@ export default function SolicitudDetallePage() {
 
       {/* Modal de Selección de Comité */}
       {showComiteModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Seleccionar Comité
-            </h3>
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowComiteModal(false);
+            setSelectedMeetingId('');
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Seleccionar Comité
+              </h3>
+              <button
+                onClick={() => {
+                  const centerSlug = currentCenter?.slug || 'centro-servicios';
+                  router.push(`/center/${centerSlug}/meetings/create`);
+                }}
+                className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
+              >
+                + Crear Comité Nuevo
+              </button>
+            </div>
             
             {loadingMeetings ? (
               <div className="text-center py-8">
@@ -859,15 +899,26 @@ export default function SolicitudDetallePage() {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   No hay comités programados aún
                 </p>
-                <button
-                  onClick={() => {
-                    const centerSlug = currentCenter?.slug || 'centro-servicios';
-                    router.push(`/center/${centerSlug}/meetings/create`);
-                  }}
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                >
-                  Crear Nuevo Comité
-                </button>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => {
+                      setShowComiteModal(false);
+                      setSelectedMeetingId('');
+                    }}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => {
+                      const centerSlug = currentCenter?.slug || 'centro-servicios';
+                      router.push(`/center/${centerSlug}/meetings/create`);
+                    }}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    Crear Nuevo Comité
+                  </button>
+                </div>
               </div>
             ) : (
               <>
