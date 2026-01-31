@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         *,
         center:centers(id, name, slug),
         created_by_user:profiles!created_by(id, email, full_name),
+        solicitud:solicitudes(id, title, nombre_proyecto, tipo_solicitud, status),
         meeting_participants(
           id,
           role,
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
           user:profiles(id, email, full_name)
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false});
 
     // Aplicar filtros
     if (centerId) {
@@ -124,7 +125,8 @@ export async function POST(request: NextRequest) {
       meeting_platform,
       meeting_url,
       participant_ids = [],
-      external_emails = []
+      external_emails = [],
+      solicitud_id = null // Opcional: vincular con solicitud
     } = body;
 
     // Validar campos requeridos
@@ -147,7 +149,8 @@ export async function POST(request: NextRequest) {
         meeting_platform,
         meeting_url,
         created_by: user.id,
-        status: 'scheduled'
+        status: 'scheduled',
+        solicitud_id // Vincular con solicitud si se proporciona
       })
       .select()
       .single();

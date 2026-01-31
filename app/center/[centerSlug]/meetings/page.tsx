@@ -25,6 +25,13 @@ interface Meeting {
     email: string;
     full_name: string;
   };
+  solicitud?: {
+    id: string;
+    title: string;
+    nombre_proyecto: string;
+    tipo_solicitud: string;
+    status: string;
+  } | null;
   meeting_participants: Array<{
     id: string;
     role: string;
@@ -48,10 +55,23 @@ export default function MeetingsPage({
   
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [error, setError] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [centerId, setCenterId] = useState<string>('');
+
+  // Filtrar meetings por tab (próximos vs pasados)
+  const filteredMeetings = meetings.filter(meeting => {
+    const meetingDate = new Date(meeting.scheduled_at);
+    const now = new Date();
+    
+    if (activeTab === 'upcoming') {
+      return meetingDate >= now;
+    } else {
+      return meetingDate < now;
+    }
+  });
 
   useEffect(() => {
     loadCurrentUser();
@@ -255,6 +275,32 @@ export default function MeetingsPage({
         </div>
       </div>
 
+      {/* Tabs: Próximos / Histórico */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setActiveTab('upcoming')}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'upcoming'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            📅 Próximos Comités ({filteredMeetings.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('past')}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'past'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            📚 Histórico ({meetings.filter(m => new Date(m.scheduled_at) < new Date()).length})
+          </button>
+        </div>
+      </div>
+
       {/* Error */}
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg flex items-center gap-2">
@@ -264,7 +310,7 @@ export default function MeetingsPage({
       )}
 
       {/* Lista de Reuniones */}
-      {meetings.length === 0 ? (
+      {filteredMeetings.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -287,7 +333,7 @@ export default function MeetingsPage({
         </motion.div>
       ) : (
         <div className="grid gap-4">
-          {meetings.map((meeting, index) => {
+          {filteredMeetings.map((meeting, index) => {
             const { date, time } = formatDateTime(meeting.scheduled_at);
             const stats = getAttendanceStats(meeting);
             const isOrganizer = meeting.meeting_participants.some(

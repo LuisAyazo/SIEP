@@ -27,6 +27,7 @@ export async function GET(
         *,
         center:centers(id, name, slug),
         created_by_user:profiles!created_by(id, email, full_name),
+        solicitud:solicitudes(id, title, nombre_proyecto, tipo_solicitud, status),
         meeting_participants(
           id,
           role,
