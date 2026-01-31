@@ -86,7 +86,27 @@ export async function createCalendarEvent(
       dateTime: event.end,
       timeZone: 'America/Bogota',
     },
-    attendees: event.attendees?.map(email => ({ email })),
+    attendees: event.attendees?.map(email => ({
+      email,
+      // Los invitados NO pueden modificar el evento
+      optional: false,
+      responseStatus: 'needsAction'
+    })),
+    // Configuración de permisos: SOLO el organizador puede editar
+    guestsCanModify: false,
+    guestsCanInviteOthers: false, // También restringir invitar a otros
+    guestsCanSeeOtherGuests: true,
+    // Hacer el evento más restrictivo
+    visibility: 'default',
+    // Generar automáticamente Google Meet
+    conferenceData: {
+      createRequest: {
+        requestId: `meet-${Date.now()}`,
+        conferenceSolutionKey: {
+          type: 'hangoutsMeet'
+        }
+      }
+    },
     reminders: {
       useDefault: false,
       overrides: [
@@ -96,10 +116,22 @@ export async function createCalendarEvent(
     },
   };
 
+  console.log('📅 Creando evento con permisos:', {
+    guestsCanModify: calendarEvent.guestsCanModify,
+    guestsCanInviteOthers: calendarEvent.guestsCanInviteOthers,
+    visibility: calendarEvent.visibility
+  });
+
   const response = await calendar.events.insert({
     calendarId: 'primary',
     requestBody: calendarEvent,
+    conferenceDataVersion: 1, // Requerido para crear Google Meet
     sendUpdates: 'all', // Enviar invitaciones a los asistentes
+  });
+
+  console.log('✅ Evento creado. Permisos aplicados:', {
+    guestsCanModify: response.data.guestsCanModify,
+    guestsCanInviteOthers: response.data.guestsCanInviteOthers
   });
 
   return response.data;

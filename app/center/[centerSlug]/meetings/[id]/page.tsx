@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import {
   Calendar,
@@ -16,7 +17,8 @@ import {
   XCircle,
   AlertCircle,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
 
 interface Meeting {
@@ -98,6 +100,29 @@ export default function MeetingDetailPage({
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSyncResponses() {
+    if (!meeting) return;
+
+    try {
+      const response = await fetch(`/api/meetings/${meeting.id}/sync-responses`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al sincronizar');
+      }
+
+      alert(`✅ ${data.message}`);
+      // Recargar reunión para ver cambios
+      await loadMeeting();
+    } catch (err: any) {
+      console.error('Error:', err);
+      alert(err.message);
     }
   }
 
@@ -253,7 +278,7 @@ export default function MeetingDetailPage({
 
   const { date, time } = formatDateTime(meeting.scheduled_at);
   const isCreator = meeting.created_by_user.id === currentUser?.id;
-  const currentParticipant = meeting.meeting_participants.find(p => p.user.id === currentUser?.id);
+  const currentParticipant = meeting.meeting_participants.find(p => p.user?.id === currentUser?.id);
   const isOrganizer = currentParticipant?.role === 'organizer';
 
   return (
@@ -275,13 +300,22 @@ export default function MeetingDetailPage({
         <div className="flex items-center gap-2">
           {getStatusBadge(meeting.status)}
           {isCreator && meeting.status === 'scheduled' && (
-            <button
-              onClick={handleCancelMeeting}
-              className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Cancelar Comité
-            </button>
+            <>
+              <Link
+                href={`/center/${resolvedParams.centerSlug}/meetings/${meeting.id}/edit`}
+                className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <Edit className="w-4 h-4" />
+                Editar
+              </Link>
+              <button
+                onClick={handleCancelMeeting}
+                className="flex items-center gap-2 px-4 py-2 border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Cancelar Comité
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -358,35 +392,84 @@ export default function MeetingDetailPage({
                 <Users className="w-5 h-5" />
                 Participantes ({meeting.meeting_participants.length})
               </h2>
+              {meeting.google_calendar_event_id && isCreator && (
+                <button
+                  onClick={handleSyncResponses}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  title="Sincronizar respuestas desde Google Calendar"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Sincronizar
+                </button>
+              )}
+            </div>
+
+            {/* Resumen de respuestas */}
+            <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {meeting.meeting_participants.filter((p: any) => p.attendance_status === 'accepted').length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Aceptaron</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  {meeting.meeting_participants.filter((p: any) => p.attendance_status === 'maybe').length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Tal vez</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {meeting.meeting_participants.filter((p: any) => p.attendance_status === 'declined').length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Rechazaron</div>
+              </div>
             </div>
 
             <div className="space-y-3">
-              {meeting.meeting_participants.map(participant => (
-                <div
-                  key={participant.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-700 font-semibold">
-                        {participant.user.full_name.charAt(0).toUpperCase()}
-                      </span>
+              {meeting.meeting_participants.map((participant: any) => {
+                // @ts-ignore - external_email es una nueva columna
+                const isExternal = !!participant.external_email;
+                const displayName = isExternal
+                  ? participant.external_email.split('@')[0]
+                  : participant.user?.full_name || 'Usuario';
+                const displayEmail = isExternal
+                  ? participant.external_email
+                  : participant.user?.email || '';
+                const initial = displayName.charAt(0).toUpperCase();
+
+                return (
+                  <div
+                    key={participant.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${isExternal ? 'bg-orange-100' : 'bg-blue-100'} rounded-full flex items-center justify-center`}>
+                        <span className={`${isExternal ? 'text-orange-700' : 'text-blue-700'} font-semibold`}>
+                          {initial}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{displayName}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{displayEmail}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{participant.user.full_name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{participant.user.email}</p>
+                    <div className="flex items-center gap-2">
+                      {isExternal && (
+                        <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full">
+                          Externo
+                        </span>
+                      )}
+                      {participant.role === 'organizer' && (
+                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-medium rounded-full">
+                          Organizador
+                        </span>
+                      )}
+                      {getAttendanceStatusBadge(participant.attendance_status)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {participant.role === 'organizer' && (
-                      <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                        Organizador
-                      </span>
-                    )}
-                    {getAttendanceStatusBadge(participant.attendance_status)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

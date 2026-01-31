@@ -31,6 +31,8 @@ export async function GET(
           id,
           role,
           attendance_status,
+          external_email,
+          notes,
           user:profiles(id, email, full_name)
         )
       `)
@@ -51,7 +53,8 @@ export async function GET(
       participantCount: meeting.meeting_participants?.length || 0,
       participants: meeting.meeting_participants?.map((p: any) => ({
         id: p.id,
-        email: p.user?.email,
+        email: p.user?.email || p.external_email,
+        isExternal: !!p.external_email,
         role: p.role
       }))
     });

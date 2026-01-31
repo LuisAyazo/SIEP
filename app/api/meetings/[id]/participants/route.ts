@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// POST /api/meetings/[id]/participants - Agregar participantes a una reunión
+// POST /api/meetings/[id]/participants - Agregar participante
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -20,10 +20,21 @@ export async function POST(
       );
     }
 
-    // Verificar que la reunión existe
+    const body = await request.json();
+    const { user_id, external_email, role = 'participant' } = body;
+
+    // Validar que se proporcione user_id O external_email
+    if (!user_id && !external_email) {
+      return NextResponse.json(
+        { error: 'Debe proporcionar user_id o external_email' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la reunión existe y el usuario es el creador
     const { data: meeting } = await supabase
       .from('meetings')
-      .select('*, meeting_participants!inner(user_id, role)')
+      .select('created_by')
       .eq('id', id)
       .single();
 
@@ -34,80 +45,42 @@ export async function POST(
       );
     }
 
-    // Verificar que el usuario es el creador o un organizador
-    const isCreator = meeting.created_by === user.id;
-    const isOrganizer = meeting.meeting_participants?.some(
-      (p: any) => p.user_id === user.id && p.role === 'organizer'
-    );
-
-    if (!isCreator && !isOrganizer) {
+    if (meeting.created_by !== user.id) {
       return NextResponse.json(
-        { error: 'No tienes permisos para agregar participantes' },
+        { error: 'Solo el creador puede agregar participantes' },
         { status: 403 }
       );
     }
 
-    // Obtener datos del body
-    const body = await request.json();
-    const { user_ids, role = 'participant' } = body;
-
-    if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
-      return NextResponse.json(
-        { error: 'Se requiere un array de user_ids' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar que los usuarios existen
-    const { data: users, error: usersError } = await supabase
-      .from('profiles')
-      .select('id')
-      .in('id', user_ids);
-
-    if (usersError || !users || users.length !== user_ids.length) {
-      return NextResponse.json(
-        { error: 'Uno o más usuarios no existen' },
-        { status: 400 }
-      );
-    }
-
-    // Preparar participantes a insertar
-    const participants = user_ids.map(userId => ({
-      meeting_id: id,
-      user_id: userId,
-      role,
-      attendance_status: 'invited'
-    }));
-
-    // Insertar participantes (con manejo de duplicados)
-    const { data: insertedParticipants, error: insertError } = await supabase
+    // Agregar participante
+    const { data: participant, error: insertError } = await supabase
       .from('meeting_participants')
-      .upsert(participants, {
-        onConflict: 'meeting_id,user_id',
-        ignoreDuplicates: false
+      .insert({
+        meeting_id: id,
+        user_id: user_id || null,
+        external_email: external_email || null,
+        role,
+        attendance_status: 'invited'
       })
       .select(`
         id,
         role,
         attendance_status,
+        external_email,
+        notes,
         user:profiles(id, email, full_name)
-      `);
+      `)
+      .single();
 
     if (insertError) {
-      console.error('Error al agregar participantes:', insertError);
+      console.error('Error al agregar participante:', insertError);
       return NextResponse.json(
-        { error: 'Error al agregar participantes' },
+        { error: 'Error al agregar participante' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(
-      {
-        participants: insertedParticipants,
-        message: `${insertedParticipants?.length || 0} participante(s) agregado(s)`
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ participant }, { status: 201 });
 
   } catch (error) {
     console.error('Error inesperado:', error);
@@ -118,8 +91,8 @@ export async function POST(
   }
 }
 
-// GET /api/meetings/[id]/participants - Obtener participantes de una reunión
-export async function GET(
+// DELETE /api/meetings/[id]/participants?participant_id=xxx - Eliminar participante
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -137,28 +110,66 @@ export async function GET(
       );
     }
 
-    // Obtener participantes
-    const { data: participants, error } = await supabase
-      .from('meeting_participants')
-      .select(`
-        id,
-        role,
-        attendance_status,
-        notes,
-        user:profiles(id, email, full_name)
-      `)
-      .eq('meeting_id', id)
-      .order('role', { ascending: false }); // Organizadores primero
+    const participantId = request.nextUrl.searchParams.get('participant_id');
 
-    if (error) {
-      console.error('Error al obtener participantes:', error);
+    if (!participantId) {
       return NextResponse.json(
-        { error: 'Error al obtener participantes' },
+        { error: 'participant_id es requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la reunión existe y el usuario es el creador
+    const { data: meeting } = await supabase
+      .from('meetings')
+      .select('created_by')
+      .eq('id', id)
+      .single();
+
+    if (!meeting) {
+      return NextResponse.json(
+        { error: 'Reunión no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    if (meeting.created_by !== user.id) {
+      return NextResponse.json(
+        { error: 'Solo el creador puede eliminar participantes' },
+        { status: 403 }
+      );
+    }
+
+    // No permitir eliminar al organizador
+    const { data: participant } = await supabase
+      .from('meeting_participants')
+      .select('role')
+      .eq('id', participantId)
+      .single();
+
+    if (participant?.role === 'organizer') {
+      return NextResponse.json(
+        { error: 'No se puede eliminar al organizador' },
+        { status: 400 }
+      );
+    }
+
+    // Eliminar participante
+    const { error: deleteError } = await supabase
+      .from('meeting_participants')
+      .delete()
+      .eq('id', participantId)
+      .eq('meeting_id', id);
+
+    if (deleteError) {
+      console.error('Error al eliminar participante:', deleteError);
+      return NextResponse.json(
+        { error: 'Error al eliminar participante' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ participants }, { status: 200 });
+    return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
     console.error('Error inesperado:', error);

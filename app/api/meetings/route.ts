@@ -199,6 +199,36 @@ export async function POST(request: NextRequest) {
       console.log('[Meetings POST] No se proporcionaron participant_ids');
     }
 
+    // Agregar participantes externos si fueron proporcionados
+    if (external_emails && external_emails.length > 0) {
+      console.log('[Meetings POST] Agregando participantes externos:', {
+        count: external_emails.length,
+        emails: external_emails,
+        meetingId: meeting.id
+      });
+
+      const externalParticipants = external_emails.map((email: string) => ({
+        meeting_id: meeting.id,
+        user_id: null,
+        external_email: email,
+        role: 'participant',
+        attendance_status: 'invited'
+      }));
+
+      const { data: insertedExternal, error: externalError } = await supabase
+        .from('meeting_participants')
+        .insert(externalParticipants)
+        .select();
+
+      if (externalError) {
+        console.error('[Meetings POST] Error al insertar participantes externos:', externalError);
+      } else {
+        console.log('[Meetings POST] Participantes externos insertados:', insertedExternal?.length);
+      }
+    } else {
+      console.log('[Meetings POST] No se proporcionaron external_emails');
+    }
+
     // Intentar sincronizar con Google Calendar si el usuario tiene tokens
     let googleEventId: string | null = null;
     try {
@@ -224,14 +254,17 @@ export async function POST(request: NextRequest) {
         const startDate = new Date(scheduled_at);
         const endDate = new Date(startDate.getTime() + duration_minutes * 60000);
 
+        // Crear descripción SIN link (el link va en location y Google Meet)
+        const eventDescription = description || '';
+
         // Crear evento en Google Calendar
         const googleEvent = await createCalendarEvent(
           profile.google_access_token,
           profile.google_refresh_token,
           {
             summary: title,
-            description: description || '',
-            location: meeting_url || '',
+            description: eventDescription,
+            location: '', // No poner link en location tampoco
             start: startDate.toISOString(),
             end: endDate.toISOString(),
             attendees: attendeeEmails,
@@ -240,11 +273,22 @@ export async function POST(request: NextRequest) {
 
         googleEventId = googleEvent.id || null;
 
-        // Guardar el ID del evento de Google Calendar
+        // Extraer link de Google Meet si fue generado
+        const meetLink = googleEvent.hangoutLink || googleEvent.conferenceData?.entryPoints?.find(
+          (ep: any) => ep.entryPointType === 'video'
+        )?.uri;
+
+        // Guardar el ID del evento y el link de Meet
+        const updateData: any = { google_calendar_event_id: googleEventId };
+        if (meetLink && !meeting_url) {
+          updateData.meeting_url = meetLink;
+          console.log('✅ Link de Google Meet generado:', meetLink);
+        }
+
         if (googleEventId) {
           await supabase
             .from('meetings')
-            .update({ google_calendar_event_id: googleEventId })
+            .update(updateData)
             .eq('id', meeting.id);
         }
 

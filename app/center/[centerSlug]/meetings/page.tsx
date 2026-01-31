@@ -291,7 +291,7 @@ export default function MeetingsPage({
             const { date, time } = formatDateTime(meeting.scheduled_at);
             const stats = getAttendanceStats(meeting);
             const isOrganizer = meeting.meeting_participants.some(
-              p => p.user.id === currentUser?.id && p.role === 'organizer'
+              p => p.user?.id === currentUser?.id && p.role === 'organizer'
             );
 
             return (

@@ -68,8 +68,11 @@ export async function PATCH(
       );
     }
 
-    // Construir objeto de actualización (sin notes, esa columna no existe)
+    // Construir objeto de actualización
     const updateData: any = { attendance_status };
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
 
     // Actualizar participante
     const { data: updatedParticipant, error: updateError } = await supabase
@@ -81,6 +84,7 @@ export async function PATCH(
         id,
         role,
         attendance_status,
+        notes,
         user:profiles(id, email, full_name)
       `)
       .single();
